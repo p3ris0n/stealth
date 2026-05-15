@@ -9,7 +9,7 @@ import { EmailView } from "@/components/mail/EmailView";
 import { Compose } from "@/components/mail/Compose";
 import { CommandPalette } from "@/components/mail/CommandPalette";
 import { SettingsModal } from "@/components/mail/SettingsModal";
-import { emails, getEmailsForFolder, mailFolders, type MailFolder } from "@/components/mail/data";
+import { emails as initialEmails, getEmailsForFolder, mailFolders, type Email, type MailFolder } from "@/components/mail/data";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -25,9 +25,11 @@ export const Route = createFileRoute("/")({
 
 function MailApp() {
   const [folder, setFolder] = useState<MailFolder>("inbox");
-  const [selectedId, setSelectedId] = useState<string | null>(emails[0].id);
+  const [emails, setEmails] = useState<Email[]>(initialEmails);
+  const [selectedId, setSelectedId] = useState<string | null>(initialEmails[0].id);
   const [collapsed, setCollapsed] = useState(false);
   const [composeOpen, setComposeOpen] = useState(false);
+  const [composeInitial, setComposeInitial] = useState<{ to?: string; subject?: string; body?: string }>({});
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -39,9 +41,9 @@ function MailApp() {
         MailFolder,
         number
       >,
-    [],
+    [emails],
   );
-  const visibleEmails = useMemo(() => getEmailsForFolder(emails, folder), [folder]);
+  const visibleEmails = useMemo(() => getEmailsForFolder(emails, folder), [emails, folder]);
   const selected = emails.find((e) => e.id === selectedId) ?? null;
   
   const showToast = (message: string) => {
@@ -49,10 +51,73 @@ function MailApp() {
     setTimeout(() => setToast(null), 4000);
   };
 
+  const updateEmail = (id: string, patch: Partial<Email>) => {
+    setEmails((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)));
+  };
+
+  const openCompose = (initial: { to?: string; subject?: string; body?: string } = {}) => {
+    setComposeInitial(initial);
+    setComposeOpen(true);
+  };
+
+  const quoteBody = (e: Email) =>
+    `\n\n---\nOn ${e.time}, ${e.from} <${e.email}> wrote:\n${e.body
+      .split("\n")
+      .map((l) => `> ${l}`)
+      .join("\n")}`;
+
+  const emailActions = {
+    onReply: (e: Email, body?: string) => {
+      if (body && body.trim()) {
+        showToast(`Reply sent to ${e.from}`);
+        return;
+      }
+      openCompose({
+        to: e.email,
+        subject: e.subject.startsWith("Re: ") ? e.subject : `Re: ${e.subject}`,
+        body: quoteBody(e),
+      });
+    },
+    onReplyAll: (e: Email) => {
+      openCompose({
+        to: e.email,
+        subject: e.subject.startsWith("Re: ") ? e.subject : `Re: ${e.subject}`,
+        body: quoteBody(e),
+      });
+    },
+    onForward: (e: Email) => {
+      openCompose({
+        to: "",
+        subject: e.subject.startsWith("Fwd: ") ? e.subject : `Fwd: ${e.subject}`,
+        body: quoteBody(e),
+      });
+    },
+    onArchive: (e: Email) => {
+      updateEmail(e.id, { folder: "archive" });
+      showToast(`Archived "${e.subject}"`);
+    },
+    onTrash: (e: Email) => {
+      updateEmail(e.id, { folder: "trash" });
+      showToast(`Moved "${e.subject}" to trash`);
+    },
+    onToggleStar: (e: Email) => {
+      updateEmail(e.id, { starred: !e.starred });
+      showToast(e.starred ? "Removed star" : "Starred");
+    },
+  };
+
+  // Mark as read on selection
+  useEffect(() => {
+    if (!selectedId) return;
+    const cur = emails.find((e) => e.id === selectedId);
+    if (cur?.unread) updateEmail(selectedId, { unread: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
+
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setPaletteOpen((v) => !v); }
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "n") { e.preventDefault(); setComposeOpen(true); }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "n") { e.preventDefault(); openCompose(); }
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
@@ -78,7 +143,7 @@ function MailApp() {
           }}
           collapsed={collapsed}
           onToggle={() => setCollapsed((v) => !v)}
-          onCompose={() => setComposeOpen(true)}
+          onCompose={() => openCompose()}
           customFolder={customFolder}
           onSelectCustomFolder={setCustomFolder}
         />
@@ -91,24 +156,31 @@ function MailApp() {
           />
           <div className="flex min-w-0 flex-1">
             <EmailList emails={emails} selectedId={selectedId} onSelect={setSelectedId} folder={folder} />
-            <EmailView email={selected} />
+            <EmailView email={selected} actions={emailActions} />
           </div>
         </div>
       </div>
 
-      <Compose open={composeOpen} onClose={() => setComposeOpen(false)} onShowToast={showToast} />
+      <Compose
+        open={composeOpen}
+        onClose={() => setComposeOpen(false)}
+        onShowToast={showToast}
+        initialTo={composeInitial.to}
+        initialSubject={composeInitial.subject}
+        initialBody={composeInitial.body}
+      />
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <CommandPalette 
         open={paletteOpen} 
         onClose={() => setPaletteOpen(false)}
-        onCompose={() => setComposeOpen(true)}
+        onCompose={() => openCompose()}
         onNavigate={(f) => {
           setFolder(f);
           setCustomFolder(null);
         }}
         onArchive={() => {
-          if (selectedId) {
-            showToast("Thread archived");
+          if (selected) {
+            emailActions.onArchive(selected);
           }
         }}
         onOpenSettings={() => setSettingsOpen(true)}

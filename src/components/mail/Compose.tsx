@@ -13,15 +13,21 @@ type Attachment = {
 export function Compose({ 
   open, 
   onClose, 
-  onShowToast 
+  onShowToast,
+  initialTo = "",
+  initialSubject = "",
+  initialBody = "",
 }: { 
   open: boolean; 
   onClose: () => void;
   onShowToast?: (message: string) => void;
+  initialTo?: string;
+  initialSubject?: string;
+  initialBody?: string;
 }) {
-  const [to, setTo] = useState("");
-  const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
+  const [to, setTo] = useState(initialTo);
+  const [subject, setSubject] = useState(initialSubject);
+  const [body, setBody] = useState(initialBody);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -32,16 +38,21 @@ export function Compose({
   
   const aiSuggestion = "Confirming Friday's review at 10am — let me know if that still works for you.";
 
-  // Reset form when closing
+  // Hydrate / reset form when opening or closing
   useEffect(() => {
-    if (!open) {
+    if (open) {
+      setTo(initialTo);
+      setSubject(initialSubject);
+      setBody(initialBody);
+    } else {
       setTo("");
       setSubject("");
       setBody("");
       setAttachments([]);
       setEmojiOpen(false);
     }
-  }, [open]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialTo, initialSubject, initialBody]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { 
