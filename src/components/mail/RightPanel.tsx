@@ -173,8 +173,14 @@ function SectionHeader({
   return (
     <div className="flex items-center gap-2">
       <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-      <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">{title}</span>
-      {badge && <span className="ml-auto rounded-md border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-foreground/80">{badge}</span>}
+      <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+        {title}
+      </span>
+      {badge && (
+        <span className="ml-auto rounded-md border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-foreground/80">
+          {badge}
+        </span>
+      )}
     </div>
   );
 }

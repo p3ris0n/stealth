@@ -1,4 +1,5 @@
-import { Clock3, MapPin, Plus, Settings2 } from "lucide-react";
+import { Check, Clock3, MapPin, Plus, Settings2 } from "lucide-react";
+import { useState } from "react";
 import type { MailEvent } from "../types";
 import "../styles.css";
 
