@@ -22,15 +22,28 @@ type Attachment = {
   type: "file" | "image";
 };
 
-export function Compose({ 
-  open, 
-  onClose, 
+export type ComposeSubmission = {
+  to: string;
+  subject: string;
+  body: string;
+  attachments: Attachment[];
+  encrypted: boolean;
+  receipt: boolean;
+  postage: string;
+  scheduled: boolean;
+};
+
+export function Compose({
+  open,
+  onClose,
   onShowToast,
   initialTo = "",
   initialSubject = "",
   initialBody = "",
-}: { 
-  open: boolean; 
+  initialPostage = "0.0001",
+  onSubmit,
+}: {
+  open: boolean;
   onClose: () => void;
   onShowToast?: (message: string) => void;
   initialTo?: string;
