@@ -342,12 +342,12 @@ export function Compose({
 
               {/* Emoji button */}
               <div className="relative">
-                <motion.button 
-                  whileTap={{ scale: 0.9 }} 
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
                   onClick={() => setEmojiOpen(!emojiOpen)}
                   className={cn(
                     "rounded-lg p-2 text-muted-foreground transition hover:bg-white/[0.06] hover:text-foreground",
-                    emojiOpen && "bg-white/[0.06] text-foreground"
+                    emojiOpen && "bg-white/[0.06] text-foreground",
                   )}
                 >
                   <Smile className="h-4 w-4" />
