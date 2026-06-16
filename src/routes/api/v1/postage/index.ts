@@ -44,11 +44,24 @@ export const Route = createFileRoute("/api/v1/postage/")({
             acceptEncoding,
             ipPrefix,
           });
+          const context = {
+            accountId: input.sender,
+            fingerprint,
+            ip,
+            relayId,
+            sender: input.sender,
+          } as {
+            accountId?: string;
+            fingerprint?: string;
+            ip?: string;
+            relayId?: string;
+            sender?: string;
+          };
           const postage = await submitPostage(
             getApiContext().repository,
             input,
             new Date(),
-            { ip, relayId, fingerprint },
+            context,
           );
           return apiSuccess(request, postage, { status: 201 });
         }),

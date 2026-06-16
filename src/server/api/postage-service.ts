@@ -8,6 +8,7 @@ import {
   checkSenderRecipientLimit,
 } from "./abuse-service";
 import { getMailboxPolicy } from "./policy-service";
+import * as metrics from "./metrics";
 import type { ApiRepository } from "./repository";
 
 export async function quotePostage(
@@ -39,10 +40,15 @@ export async function submitPostage(
   repository: ApiRepository,
   input: Omit<Postage, "createdAt" | "status">,
   now = new Date(),
-  context: { ip?: string; relayId?: string; fingerprint?: string } = {},
+  context: { fingerprint?: string; ip?: string; relayId?: string } = {},
 ) {
+  const accountId = (context as { accountId?: string }).accountId ?? "unknown";
   const accountLimit = await checkAccountLimit(repository, input.sender);
   if (!accountLimit.allowed) {
+    metrics.incrementCounter("postage_limit_rejected", {
+      accountId,
+      limit: "account",
+    });
     throw new ApiError(429, "rate_limited", "Account limit exceeded", {
       retryAfterSeconds: accountLimit.retryAfterSeconds,
     });
@@ -50,6 +56,10 @@ export async function submitPostage(
 
   const ipLimit = await checkIpLimit(repository, context.ip ?? "unknown");
   if (!ipLimit.allowed) {
+    metrics.incrementCounter("postage_limit_rejected", {
+      ip: context.ip ?? "unknown",
+      limit: "ip",
+    });
     throw new ApiError(429, "rate_limited", "IP limit exceeded", {
       retryAfterSeconds: ipLimit.retryAfterSeconds,
     });
@@ -57,6 +67,10 @@ export async function submitPostage(
 
   const deviceLimit = await checkDeviceLimit(repository, context.fingerprint ?? "");
   if (!deviceLimit.allowed) {
+    metrics.incrementCounter("postage_limit_rejected", {
+      fingerprint: context.fingerprint ?? "unknown",
+      limit: "device",
+    });
     throw new ApiError(429, "rate_limited", "Device limit exceeded", {
       retryAfterMs: deviceLimit.retryAfterMs,
     });
@@ -68,6 +82,11 @@ export async function submitPostage(
     input.recipient,
   );
   if (!senderRecipientLimit.allowed) {
+    const sender = (context as { sender?: string }).sender ?? input.sender;
+    metrics.incrementCounter("postage_limit_rejected", {
+      limit: "sender_recipient",
+      sender,
+    });
     throw new ApiError(429, "rate_limited", "Sender-recipient limit exceeded", {
       retryAfterSeconds: senderRecipientLimit.retryAfterSeconds,
     });
@@ -76,6 +95,10 @@ export async function submitPostage(
   const relayId = context.relayId?.trim() || "unknown";
   const relayLimit = await checkRelayLimit(repository, relayId);
   if (!relayLimit.allowed) {
+    metrics.incrementCounter("postage_limit_rejected", {
+      limit: "relay",
+      relayId: context.relayId ?? "unknown",
+    });
     throw new ApiError(429, "rate_limited", "Relay limit exceeded", {
       retryAfterSeconds: relayLimit.retryAfterSeconds,
     });
