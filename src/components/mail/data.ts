@@ -179,6 +179,8 @@ export const emails: Email[] = [
     labels: ["Design", "Priority"],
     attachments: [
       { name: "vantage-identity-v3.pdf", size: "4.2 MB", type: "pdf" },
+      { name: "brand-moodboard.png", size: "1.8 MB", type: "png" },
+      { name: "release-notes.txt", size: "1.2 KB", type: "txt" },
       { name: "motion-principles.key", size: "12.1 MB", type: "key" },
     ],
     avatarColor: c(0),
@@ -278,7 +280,11 @@ export const emails: Email[] = [
     starred: false,
     folder: "encrypted",
     labels: ["Encrypted", "Engineering"],
-    attachments: [{ name: "payload-test-vector.json", size: "18 KB", type: "json" }],
+    attachments: [
+      { name: "payload-test-vector.json", size: "18 KB", type: "json" },
+      { name: "encrypted-data.pgp", size: "1.4 KB", type: "pgp" },
+      { name: "stealth-payload.bin", size: "256 B", type: "bin" },
+    ],
     avatarColor: c(0),
   },
   {

@@ -57,7 +57,7 @@ export type EmailViewActions = {
   onOpenCalendar?: (eventId?: string) => void;
   onCalendarResponseChange?: (eventId: string, response: CalendarResponse) => void;
   onCalendarReminderChange?: (eventId: string, reminder: string) => void;
-  onSendReadReceipt?: (email: Email) => void;
+  onPreviewAttachment?: (attachment: { name: string; size: string; type: string }) => void;
 };
 
 export function EmailView({
@@ -312,7 +312,13 @@ export function EmailView({
                       {email.attachments.map((attachment) => (
                         <motion.div
                           key={attachment.name}
-                          className="glass-tile flex min-w-0 items-center gap-2 rounded-md px-2 py-1.5"
+                          onClick={() => actions.onPreviewAttachment?.(attachment)}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className={cn(
+                            "glass-tile flex min-w-0 items-center gap-2 rounded-md px-2 py-1.5 transition-all duration-150",
+                            actions.onPreviewAttachment && "cursor-pointer hover:bg-white/[0.08] hover:border-white/15"
+                          )}
                         >
                           <AttachmentIcon type={attachment.type} />
                           <div className="min-w-0 flex-1">

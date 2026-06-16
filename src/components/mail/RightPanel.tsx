@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 import {
   ArrowUpRight,
   Calendar,
@@ -30,7 +31,7 @@ export function RightPanel({
   calendars,
   onOpenCalendar,
   onCreateEvent,
-  onShowToast,
+  onPreviewAttachment,
 }: {
   email: Email | null;
   onAction: (action: ContextAction, email: Email) => void;
@@ -41,7 +42,7 @@ export function RightPanel({
   calendars: CalendarDefinition[];
   onOpenCalendar: (eventId?: string) => void;
   onCreateEvent: () => void;
-  onShowToast?: (message: string) => void;
+  onPreviewAttachment?: (attachment: { name: string; size: string; type: string }) => void;
 }) {
   const [prompt, setPrompt] = useState("");
   const [summary, setSummary] = useState<string | null>(null);
@@ -169,7 +170,11 @@ export function RightPanel({
             {email.attachments.map((attachment) => (
               <li
                 key={attachment.name}
-                className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition hover:bg-white/[0.04]"
+                onClick={() => onPreviewAttachment?.(attachment)}
+                className={cn(
+                  "flex items-center gap-2 rounded-lg px-2 py-1.5 transition duration-150",
+                  onPreviewAttachment && "cursor-pointer hover:bg-white/[0.06]"
+                )}
               >
                 <div className="grid h-7 w-7 place-items-center rounded-md bg-white/[0.05] text-[9px] font-bold uppercase text-muted-foreground">
                   {attachment.type}

@@ -9,8 +9,7 @@ import { Compose } from "@/components/mail/Compose";
 import type { ComposeSubmission } from "@/components/mail/composeValidation";
 import { RightPanel, type ContextAction } from "@/components/mail/RightPanel";
 import { SettingsModal } from "@/components/mail/SettingsModal";
-import { LandingScreen } from "@/components/landing/LandingScreen";
-import { useFreighter } from "@/features/onboarding/useFreighter";
+import { AttachmentPreviewDrawer } from "@/components/mail/AttachmentPreviewDrawer";
 import {
   defaultMailFilters,
   deriveProof,
@@ -109,8 +108,11 @@ function MailApp({ isDemoMode, onSignOut }: { isDemoMode?: boolean; onSignOut?: 
   const { preferences, setPreferences, hydrated } = usePreferences();
   const [settingsSnapshot, setSettingsSnapshot] = useState<typeof preferences | null>(null);
   const senderConversion = useSenderConversion();
-  const snooze = useSnooze();
-  const isMobile = useIsMobile();
+  const [previewAttachment, setPreviewAttachment] = useState<{
+    name: string;
+    size: string;
+    type: string;
+  } | null>(null);
 
   // Gate: show onboarding only after localStorage has been read (hydrated) and only
   // when it has not been completed in a previous session.
@@ -288,12 +290,8 @@ function MailApp({ isDemoMode, onSignOut }: { isDemoMode?: boolean; onSignOut?: 
     },
     onCalendarResponseChange: calendar.updateResponse,
     onCalendarReminderChange: calendar.updateReminder,
-    onInlineSubmit: (_e: Email, submission: ComposeSubmission) => handleComposeSubmit(submission),
-    minimumPostage: preferences.minimumPostage,
-    onSendReadReceipt: (e: Email) => {
-      updateEmail(e.id, { receiptState: "sent" });
-      showToast("Read receipt sent");
-    },
+    onPreviewAttachment: (attachment: { name: string; size: string; type: string }) =>
+      setPreviewAttachment(attachment),
   };
 
   const handleContextAction = (action: ContextAction, email: Email) => {
@@ -473,6 +471,7 @@ function MailApp({ isDemoMode, onSignOut }: { isDemoMode?: boolean; onSignOut?: 
                   body: `${prompt}\n\nDrafted response:\nThanks for the note. I reviewed the context and will follow up with the next step shortly.${quoteBody(email)}`,
                 })
               }
+              onPreviewAttachment={(attachment) => setPreviewAttachment(attachment)}
             />
           </div>
         </div>
@@ -561,16 +560,11 @@ function MailApp({ isDemoMode, onSignOut }: { isDemoMode?: boolean; onSignOut?: 
         onClose={senderConversion.close}
       />
 
-      <SnoozeDialog
-        target={snooze.target}
-        initialState={
-          snooze.target
-            ? emails.find((item) => item.id === snooze.target?.emailId)?.snooze
-            : undefined
-        }
-        events={calendar.events}
-        onConfirm={handleSnooze}
-        onClose={snooze.close}
+      <AttachmentPreviewDrawer
+        isOpen={!!previewAttachment}
+        onClose={() => setPreviewAttachment(null)}
+        attachment={previewAttachment}
+        senderAddress={selected?.email}
       />
     </div>
   );
