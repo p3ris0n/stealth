@@ -32,7 +32,7 @@ jobs:
 
       - name: Check Generated Artifacts
         run: |
-          bun x tsr generate
+          bun x @tanstack/router-cli generate
           git diff --exit-code src/routeTree.gen.ts
 
       - name: Typecheck
