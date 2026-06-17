@@ -26,10 +26,12 @@ import {
   deriveProof,
   emails as initialEmails,
   getEmailsForFolder,
+  getFolderLabel,
   mailFolders,
   type Email,
   type MailFilters,
   type MailFolder,
+  type MailLocation,
 } from "@/components/mail/data";
 import { usePreferences, useLayoutPreferences } from "@/features/preferences";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
@@ -241,6 +243,20 @@ function MailApp({ isDemoMode }: { isDemoMode?: boolean }) {
   const handleStar = (e: Email) => {
     updateEmail(e.id, { starred: !e.starred });
     showToast(e.starred ? `Unstarred "${e.subject}"` : `Starred "${e.subject}"`);
+  };
+
+  const handleMove = (emailIds: string[], target: MailFolder) => {
+    let moved = 0;
+    for (const id of emailIds) {
+      const email = emails.find((em) => em.id === id);
+      if (email && email.folder !== (target as MailLocation)) {
+        updateEmail(id, { folder: target as MailLocation });
+        moved++;
+      }
+    }
+    if (moved > 0) {
+      showToast(`${moved === 1 ? "1 message" : `${moved} messages`} moved to ${getFolderLabel(target)}`);
+    }
   };
 
   const handleMobileSnooze = (e: Email) => {
@@ -648,6 +664,7 @@ function MailApp({ isDemoMode }: { isDemoMode?: boolean }) {
                 onCompose={() => openCompose()}
                 customFolder={customFolder}
                 onSelectCustomFolder={setCustomFolder}
+                onDrop={handleMove}
               />
             </ResizablePanel>
             <ResizableHandle withHandle />
@@ -666,6 +683,7 @@ function MailApp({ isDemoMode }: { isDemoMode?: boolean }) {
             onCompose={() => openCompose()}
             customFolder={customFolder}
             onSelectCustomFolder={setCustomFolder}
+            onDrop={handleMove}
           />
         )}
 
@@ -733,6 +751,7 @@ function MailApp({ isDemoMode }: { isDemoMode?: boolean }) {
                       onArchive={handleArchive}
                       onStar={handleStar}
                       onSnooze={handleMobileSnooze}
+                      onMove={handleMove}
                     />
                   </ResizablePanel>
                   {!isMobile && (
