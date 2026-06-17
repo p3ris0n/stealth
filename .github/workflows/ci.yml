@@ -30,11 +30,6 @@ jobs:
       - name: Lint
         run: bun run lint
 
-      - name: Check Generated Artifacts
-        run: |
-          bun x tsr generate
-          git diff --exit-code src/routeTree.gen.ts
-
       - name: Typecheck
         run: bun x tsc --noEmit
 
@@ -42,7 +37,9 @@ jobs:
         run: bun run test
 
       - name: Build Client
-        run: bun run build
+        run: |
+          bun run build
+          git diff --exit-code src/routeTree.gen.ts
 
       - name: Upload Client Artifacts
         uses: actions/upload-artifact@v4
