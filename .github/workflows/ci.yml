@@ -30,7 +30,6 @@ jobs:
       - name: Lint
         run: bun run lint
 
-
       - name: Typecheck
         run: bun x tsc --noEmit
 
