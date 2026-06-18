@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { BulkConfirmDialog } from "@/components/mail/BulkConfirmDialog";
 import { Sidebar } from "@/components/mail/Sidebar";
 import { Topbar } from "@/components/mail/Topbar";
+import { BottomNavigation } from "@/components/mail/BottomNavigation";
 import { EmailList } from "@/components/mail/EmailList";
 import { EmailView } from "@/components/mail/EmailView";
 import { Compose } from "@/components/mail/Compose";
@@ -693,7 +694,7 @@ function MailApp({ isDemoMode }: { isDemoMode?: boolean }) {
           )}
 
           <ResizablePanel defaultSize={isMobile ? 100 : 100 - layout.sidebarWidth}>
-            <div className="flex h-full flex-col min-w-0">
+            <div className="flex h-full flex-col min-w-0 pb-[72px] md:pb-0">
               <Topbar
                 onOpenPalette={() => setPaletteOpen(true)}
                 onOpenSettings={openSettings}
@@ -900,6 +901,17 @@ function MailApp({ isDemoMode }: { isDemoMode?: boolean }) {
           onShowToast={showToast}
         />
 
+        <BottomNavigation
+          active={folder}
+          onCompose={() => openCompose()}
+          onOpenPalette={() => setPaletteOpen(true)}
+          onOpenCalendar={() => openCalendar()}
+          onOpenSettings={openSettings}
+          onSelectFolder={(f) => {
+            setFolder(f);
+            setCustomFolder(null);
+          }}
+        />
         <FeedbackViewport items={feedbackItems} onDismiss={dismissFeedback} />
 
         <ImportWizard
