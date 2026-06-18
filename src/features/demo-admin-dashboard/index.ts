@@ -119,6 +119,7 @@ export {
 } from "./fixtures/audienceSegmentFixtures";
 export { getSegmentById, resolveSegmentLabel, getSegmentToken } from "./utils/segmentHelpers";
 export { AUDIENCE_SEGMENT_TOKENS } from "./constants/displayTokens";
+export {
   POSTAGE_STATUS_LABEL,
   truncateHash,
   formatLatency,
