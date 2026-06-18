@@ -28,11 +28,11 @@ Role-based attachment filtering (e.g., hiding attachments from `viewer` and `gue
 
 Short-circuit rejection of oversized strings prevents downstream code from performing expensive regex evaluation, database lookups, or string comparisons against adversarially long values.
 
-| Field | Limit | Rationale |
-|---|---|---|
-| `role` | 64 chars | No real role name exceeds this; caps regex input length |
+| Field      | Limit     | Rationale                                               |
+| ---------- | --------- | ------------------------------------------------------- |
+| `role`     | 64 chars  | No real role name exceeds this; caps regex input length |
 | `threadId` | 128 chars | Prevents lookup table abuse with artificially long keys |
-| `email` | 254 chars | RFC 5321 maximum; rejects padding attacks |
+| `email`    | 254 chars | RFC 5321 maximum; rejects padding attacks               |
 
 ## Allowlist Over Regex
 

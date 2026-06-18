@@ -44,28 +44,28 @@ Expected output: 33 passing tests, 0 failures.
 
 All helpers live in `guards/access-guards.mjs` and throw `AccessValidationError` on invalid input.
 
-| Export | Purpose |
-|---|---|
-| `sanitizeRole(raw)` | Trims, lowercases, strips non-alphanumeric chars — use before validation |
-| `validateRole(role)` | Allowlist check against 5 known roles |
-| `validateAccessLevel(level)` | Allowlist check against 5 known access levels |
-| `validateEmailAddress(email)` | Rejects CRLF injection, null bytes, missing local/domain parts |
-| `validateThreadId(threadId)` | Rejects path traversal, spaces, special chars |
-| `validateAccessRequest(req)` | Full object validation — calls all four field validators |
-| `checkAccess(role, level, policy)` | O(1) Set-based policy lookup — returns boolean |
-| `guardTeamSize(members)` | Rejects arrays > 500 before any role scan |
-| `guardAttachmentCount(attachments)` | Rejects arrays > 100 before any filter pass |
-| `LIMITS` | Exported constants for all thresholds |
+| Export                              | Purpose                                                                  |
+| ----------------------------------- | ------------------------------------------------------------------------ |
+| `sanitizeRole(raw)`                 | Trims, lowercases, strips non-alphanumeric chars — use before validation |
+| `validateRole(role)`                | Allowlist check against 5 known roles                                    |
+| `validateAccessLevel(level)`        | Allowlist check against 5 known access levels                            |
+| `validateEmailAddress(email)`       | Rejects CRLF injection, null bytes, missing local/domain parts           |
+| `validateThreadId(threadId)`        | Rejects path traversal, spaces, special chars                            |
+| `validateAccessRequest(req)`        | Full object validation — calls all four field validators                 |
+| `checkAccess(role, level, policy)`  | O(1) Set-based policy lookup — returns boolean                           |
+| `guardTeamSize(members)`            | Rejects arrays > 500 before any role scan                                |
+| `guardAttachmentCount(attachments)` | Rejects arrays > 100 before any filter pass                              |
+| `LIMITS`                            | Exported constants for all thresholds                                    |
 
 ## Roles and Access Levels
 
-| Role | read | write | assign | delete | manage |
-|---|---|---|---|---|---|
-| `admin` | ✓ | ✓ | ✓ | ✓ | ✓ |
-| `manager` | ✓ | ✓ | ✓ | | |
-| `agent` | ✓ | ✓ | | | |
-| `viewer` | ✓ | | | | |
-| `guest` | | | | | |
+| Role      | read | write | assign | delete | manage |
+| --------- | ---- | ----- | ------ | ------ | ------ |
+| `admin`   | ✓    | ✓     | ✓      | ✓      | ✓      |
+| `manager` | ✓    | ✓     | ✓      |        |        |
+| `agent`   | ✓    | ✓     |        |        |        |
+| `viewer`  | ✓    |       |        |        |        |
+| `guest`   |      |       |        |        |        |
 
 ## Known Limitations
 

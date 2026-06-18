@@ -10,13 +10,13 @@ The guard module (`guards/access-guards.mjs`) sits at the boundary between calle
 
 ## Roles and Access Levels
 
-| Role | Allowed levels |
-|---|---|
-| `admin` | read, write, assign, delete, manage |
-| `manager` | read, write, assign |
-| `agent` | read, write |
-| `viewer` | read |
-| `guest` | *(none)* |
+| Role      | Allowed levels                      |
+| --------- | ----------------------------------- |
+| `admin`   | read, write, assign, delete, manage |
+| `manager` | read, write, assign                 |
+| `agent`   | read, write                         |
+| `viewer`  | read                                |
+| `guest`   | _(none)_                            |
 
 Any role or access level not in the above table must be rejected before reaching policy evaluation.
 
@@ -32,43 +32,43 @@ Any role or access level not in the above table must be rejected before reaching
 
 ### Role field
 
-| Input | Attack vector |
-|---|---|
-| `null` / `undefined` / `""` | Null-check bypass |
-| `"ADMIN"` | Case-sensitivity bypass |
-| `"superadmin"`, `"root"` | Non-existent role escalation |
-| `"аdmin"` (Cyrillic а) | Unicode homoglyph spoofing |
-| `"admin\0"` | Null-byte injection |
+| Input                       | Attack vector                 |
+| --------------------------- | ----------------------------- |
+| `null` / `undefined` / `""` | Null-check bypass             |
+| `"ADMIN"`                   | Case-sensitivity bypass       |
+| `"superadmin"`, `"root"`    | Non-existent role escalation  |
+| `"аdmin"` (Cyrillic а)      | Unicode homoglyph spoofing    |
+| `"admin\0"`                 | Null-byte injection           |
 | `"admin; DROP TABLE roles"` | SQL / command injection style |
-| 65+ character string | Regex or buffer exhaustion |
+| 65+ character string        | Regex or buffer exhaustion    |
 
 ### Access level field
 
-| Input | Attack vector |
-|---|---|
+| Input                          | Attack vector                             |
+| ------------------------------ | ----------------------------------------- |
 | `"superwrite"`, `"*"`, `"all"` | Wildcard or non-existent level escalation |
-| `""` | Empty-string bypass |
+| `""`                           | Empty-string bypass                       |
 
 ### Email field
 
-| Input | Attack vector |
-|---|---|
-| `"user@evil.test\r\nBcc: victim@..."` | CRLF header injection |
-| `"user\0@evil.test"` | Null-byte injection |
-| `"@domain.test"` | Missing local part |
-| `"user@"` | Missing domain |
-| `"nodomain"` | Missing `@` entirely |
-| 255+ character address | RFC 5321 violation / buffer risk |
+| Input                                 | Attack vector                    |
+| ------------------------------------- | -------------------------------- |
+| `"user@evil.test\r\nBcc: victim@..."` | CRLF header injection            |
+| `"user\0@evil.test"`                  | Null-byte injection              |
+| `"@domain.test"`                      | Missing local part               |
+| `"user@"`                             | Missing domain                   |
+| `"nodomain"`                          | Missing `@` entirely             |
+| 255+ character address                | RFC 5321 violation / buffer risk |
 
 ### Thread ID field
 
-| Input | Attack vector |
-|---|---|
-| `"../../../secret"` | Path traversal |
-| `"thread 001"`, `"thread\tid"` | Whitespace / tab injection |
-| `"<script>alert(1)</script>"` | XSS payload in stored ID |
-| `"thread\0id"` | Null-byte injection |
-| 129+ character string | ID exhaustion / lookup abuse |
+| Input                          | Attack vector                |
+| ------------------------------ | ---------------------------- |
+| `"../../../secret"`            | Path traversal               |
+| `"thread 001"`, `"thread\tid"` | Whitespace / tab injection   |
+| `"<script>alert(1)</script>"`  | XSS payload in stored ID     |
+| `"thread\0id"`                 | Null-byte injection          |
+| 129+ character string          | ID exhaustion / lookup abuse |
 
 ## Out-of-Scope Threats (follow-up issues)
 

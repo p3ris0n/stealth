@@ -19,7 +19,10 @@ export class AccessValidationError extends Error {
 
 export function sanitizeRole(raw) {
   if (typeof raw !== "string") return null;
-  return raw.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
+  return raw
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, "");
 }
 
 export function validateRole(role) {
@@ -50,7 +53,10 @@ export function validateEmailAddress(email) {
     throw new AccessValidationError("email must be a non-empty string", "email");
   }
   if (email.length > MAX_EMAIL_LENGTH) {
-    throw new AccessValidationError(`email exceeds RFC 5321 max length of ${MAX_EMAIL_LENGTH}`, "email");
+    throw new AccessValidationError(
+      `email exceeds RFC 5321 max length of ${MAX_EMAIL_LENGTH}`,
+      "email",
+    );
   }
   // Reject header injection characters before any further processing
   if (/[\r\n\0]/.test(email)) {
@@ -68,7 +74,10 @@ export function validateThreadId(threadId) {
     throw new AccessValidationError("threadId must be a non-empty string", "threadId");
   }
   if (threadId.length > MAX_THREAD_ID_LENGTH) {
-    throw new AccessValidationError(`threadId exceeds max length of ${MAX_THREAD_ID_LENGTH}`, "threadId");
+    throw new AccessValidationError(
+      `threadId exceeds max length of ${MAX_THREAD_ID_LENGTH}`,
+      "threadId",
+    );
   }
   // Rejects path traversal (../), spaces, and any non-alphanumeric except _ and -
   if (!THREAD_ID_PATTERN.test(threadId)) {
@@ -103,7 +112,7 @@ export function guardTeamSize(members) {
   if (members.length > MAX_TEAM_SIZE) {
     throw new AccessValidationError(
       `team size ${members.length} exceeds safe limit of ${MAX_TEAM_SIZE} — paginate before scanning`,
-      "members"
+      "members",
     );
   }
   return true;
@@ -117,7 +126,7 @@ export function guardAttachmentCount(attachments) {
   if (attachments.length > MAX_ATTACHMENT_COUNT) {
     throw new AccessValidationError(
       `attachment count ${attachments.length} exceeds safe limit of ${MAX_ATTACHMENT_COUNT} — paginate before filtering`,
-      "attachments"
+      "attachments",
     );
   }
   return true;

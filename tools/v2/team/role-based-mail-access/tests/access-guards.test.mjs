@@ -84,8 +84,14 @@ test("validateEmailAddress accepts well-formed addresses", () => {
 });
 
 test("validateEmailAddress throws for CRLF header injection", () => {
-  assert.throws(() => validateEmailAddress("user@evil.test\r\nBcc: victim@example.test"), AccessValidationError);
-  assert.throws(() => validateEmailAddress("user@evil.test\nX-Injected: yes"), AccessValidationError);
+  assert.throws(
+    () => validateEmailAddress("user@evil.test\r\nBcc: victim@example.test"),
+    AccessValidationError,
+  );
+  assert.throws(
+    () => validateEmailAddress("user@evil.test\nX-Injected: yes"),
+    AccessValidationError,
+  );
 });
 
 test("validateEmailAddress throws for null byte", () => {
@@ -119,7 +125,10 @@ test("validateThreadId throws for spaces and special characters", () => {
 });
 
 test("validateThreadId throws for oversized ID", () => {
-  assert.throws(() => validateThreadId("a".repeat(LIMITS.MAX_THREAD_ID_LENGTH + 1)), AccessValidationError);
+  assert.throws(
+    () => validateThreadId("a".repeat(LIMITS.MAX_THREAD_ID_LENGTH + 1)),
+    AccessValidationError,
+  );
 });
 
 // --- validateAccessRequest ---
@@ -132,7 +141,7 @@ test("validateAccessRequest passes a well-formed request", () => {
       requesterEmail: "alice@example.test",
       threadId: "thread-001",
     }),
-    true
+    true,
   );
 });
 
@@ -144,8 +153,14 @@ test("validateAccessRequest throws for non-object input", () => {
 
 test("validateAccessRequest propagates field-level errors", () => {
   assert.throws(
-    () => validateAccessRequest({ role: "ADMIN", accessLevel: "read", requesterEmail: "a@b.test", threadId: "t-001" }),
-    AccessValidationError
+    () =>
+      validateAccessRequest({
+        role: "ADMIN",
+        accessLevel: "read",
+        requesterEmail: "a@b.test",
+        threadId: "t-001",
+      }),
+    AccessValidationError,
   );
 });
 
@@ -197,7 +212,7 @@ test("all fixture hostile inputs are rejected by the appropriate guard", async (
     assert.throws(
       () => fn(entry.value),
       AccessValidationError,
-      `hostile input for ${entry.field} ("${entry.reason}") must throw AccessValidationError`
+      `hostile input for ${entry.field} ("${entry.reason}") must throw AccessValidationError`,
     );
   }
 });
@@ -209,7 +224,10 @@ test("guardTeamSize passes for arrays within the limit", () => {
 });
 
 test("guardTeamSize throws when team exceeds the safe limit", () => {
-  assert.throws(() => guardTeamSize(new Array(LIMITS.MAX_TEAM_SIZE + 1).fill({})), AccessValidationError);
+  assert.throws(
+    () => guardTeamSize(new Array(LIMITS.MAX_TEAM_SIZE + 1).fill({})),
+    AccessValidationError,
+  );
 });
 
 test("guardTeamSize throws for non-array input", () => {
@@ -221,7 +239,10 @@ test("guardAttachmentCount passes for arrays within the limit", () => {
 });
 
 test("guardAttachmentCount throws when attachment count exceeds the safe limit", () => {
-  assert.throws(() => guardAttachmentCount(new Array(LIMITS.MAX_ATTACHMENT_COUNT + 1).fill({})), AccessValidationError);
+  assert.throws(
+    () => guardAttachmentCount(new Array(LIMITS.MAX_ATTACHMENT_COUNT + 1).fill({})),
+    AccessValidationError,
+  );
 });
 
 test("guardAttachmentCount throws for non-array input", () => {
