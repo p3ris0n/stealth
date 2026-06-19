@@ -73,4 +73,4 @@ export function buildCampaignExportFilename(
   const month = String(date.getUTCMonth() + 1).padStart(2, "0");
   const day = String(date.getUTCDate()).padStart(2, "0");
   return `${prefix}-${snapshot.id}-${year}-${month}-${day}.json`;
-    }
+}
