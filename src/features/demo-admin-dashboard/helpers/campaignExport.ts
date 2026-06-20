@@ -1,4 +1,5 @@
 import type { Draft } from "../types/draft";
+import type { CampaignSnapshot } from "../types/campaignSnapshot";
 import {
   CAMPAIGN_EXPORT_SCHEMA_VERSION,
   type CampaignSnapshotExport,
