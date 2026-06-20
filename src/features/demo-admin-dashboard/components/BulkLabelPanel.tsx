@@ -277,23 +277,86 @@ export function BulkLabelPanel({
       {/* Partial Labels (on some messages) */}
       {labelState.partial.length > 0 && (
         <div className="space-y-3">
-          <Label className="text-sm font-medium">
-            Partial Labels ({labelState.partial.length})
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-medium">
+              Partial Labels ({labelState.partial.length})
+            </Label>
+            {(selectedForAdd.size > 0 || selectedForRemove.size > 0) && (
+              <div className="flex gap-2">
+                {selectedForAdd.size > 0 && (
+                  <Button
+                    onClick={applyAddLabels}
+                    variant="default"
+                    size="sm"
+                  >
+                    Add Selected ({selectedForAdd.size})
+                  </Button>
+                )}
+                {selectedForRemove.size > 0 && (
+                  <Button
+                    onClick={applyRemoveLabels}
+                    variant="destructive"
+                    size="sm"
+                  >
+                    Remove Selected ({selectedForRemove.size})
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
           <p className="text-xs text-muted-foreground">
-            These labels exist on some but not all selected messages
+            These labels exist on some but not all selected messages. Click to add to all, or click the X to remove from all.
           </p>
           <ScrollArea className="h-32">
             <div className="flex flex-wrap gap-2">
-              {labelState.partial.map((label) => (
-                <Badge
-                  key={label}
-                  variant="outline"
-                  className="cursor-pointer transition-colors border-dashed"
-                >
-                  {label}
-                </Badge>
-              ))}
+              {labelState.partial.map((label) => {
+                const isMarkedForAdd = selectedForAdd.has(label);
+                const isMarkedForRemove = selectedForRemove.has(label);
+                return (
+                  <Badge
+                    key={label}
+                    variant={
+                      isMarkedForAdd ? "default" :
+                      isMarkedForRemove ? "destructive" :
+                      "outline"
+                    }
+                    className={cn(
+                      "transition-colors",
+                      (!isMarkedForAdd && !isMarkedForRemove) && "cursor-pointer border-dashed hover:border-solid"
+                    )}
+                    onClick={() => {
+                      if (!isMarkedForAdd && !isMarkedForRemove) {
+                        toggleLabelForAdd(label);
+                      } else if (isMarkedForAdd) {
+                        setSelectedForAdd(prev => {
+                          const next = new Set(prev);
+                          next.delete(label);
+                          return next;
+                        });
+                      }
+                    }}
+                  >
+                    {label}
+                    {isMarkedForAdd ? (
+                      <CheckCircle2 className="h-3 w-3 ml-1" />
+                    ) : isMarkedForRemove ? (
+                      <X className="h-3 w-3 ml-1" />
+                    ) : (
+                      <button
+                        type="button"
+                        className="ml-1 hover:text-destructive focus:outline-none"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleLabelForRemove(label);
+                        }}
+                        aria-label={`Remove ${label} from all selected`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                  </Badge>
+                );
+              })}
             </div>
           </ScrollArea>
         </div>
