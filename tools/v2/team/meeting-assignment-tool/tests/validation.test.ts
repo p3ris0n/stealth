@@ -9,7 +9,9 @@ import { enforceAssigneeLimits, chunkAssignees } from "../helpers/performance";
 describe("Meeting Assignment Tool - Validation & Performance Constraints", () => {
   describe("Validation", () => {
     it("should sanitize meeting title", () => {
-      expect(sanitizeMeetingTitle("Meeting <script>alert(1)</script>")).toBe("Meeting &lt;script&gt;alert(1)&lt;/script&gt;");
+      expect(sanitizeMeetingTitle("Meeting <script>alert(1)</script>")).toBe(
+        "Meeting &lt;script&gt;alert(1)&lt;/script&gt;",
+      );
     });
 
     it("should throw error if meeting title is too long", () => {

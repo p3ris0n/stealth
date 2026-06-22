@@ -7,9 +7,4 @@ export { DateRangePicker } from "./components/date-range-picker";
 export { useResponseTimes } from "./hooks/use-response-times";
 export { createResponseTimeService } from "./services/response-time-service";
 
-export type {
-  DateRange,
-  FetchState,
-  ResponseTimeEntry,
-  TeamMember,
-} from "./types";
+export type { DateRange, FetchState, ResponseTimeEntry, TeamMember } from "./types";

@@ -11,7 +11,9 @@ const MAX_ASSIGNEES_PER_MEETING = 50;
  */
 export function enforceAssigneeLimits(assignees: string[]): void {
   if (assignees.length > MAX_ASSIGNEES_PER_MEETING) {
-    throw new Error(`Performance Guard: Exceeded maximum allowed assignees (${MAX_ASSIGNEES_PER_MEETING}). Provided: ${assignees.length}`);
+    throw new Error(
+      `Performance Guard: Exceeded maximum allowed assignees (${MAX_ASSIGNEES_PER_MEETING}). Provided: ${assignees.length}`,
+    );
   }
 }
 

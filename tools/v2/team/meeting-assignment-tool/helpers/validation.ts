@@ -51,15 +51,15 @@ export function validateMeetingPayload(payload: any): payload is MeetingPayload 
   if (!payload || typeof payload !== "object") {
     throw new Error("Invalid payload: Must be an object.");
   }
-  
+
   if (!payload.meetingId || typeof payload.meetingId !== "string") {
     throw new Error("Invalid payload: Missing or invalid meetingId.");
   }
-  
+
   if (!payload.title || typeof payload.title !== "string") {
     throw new Error("Invalid payload: Missing or invalid title.");
   }
-  
+
   if (!Array.isArray(payload.assignees)) {
     throw new Error("Invalid payload: assignees must be an array.");
   }
@@ -74,7 +74,7 @@ export function validateMeetingPayload(payload: any): payload is MeetingPayload 
   if (payload.description && typeof payload.description !== "string") {
     throw new Error("Invalid payload: description must be a string.");
   }
-  
+
   if (payload.description && payload.description.length > MAX_DESCRIPTION_LENGTH) {
     throw new Error(`Invalid payload: description exceeds ${MAX_DESCRIPTION_LENGTH} characters.`);
   }
