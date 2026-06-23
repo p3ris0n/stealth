@@ -2,8 +2,7 @@ import {
   Project,
   AutoBindingRule,
   ProjectMailBinding,
-  MatchingCriteria,
-} from "../implementation.md";
+} from "../types";
 import type { Email } from "@/components/mail/data";
 
 /**
