@@ -168,4 +168,3 @@ export function addOneHour(value: string) {
   const [hours, minutes] = value.split(":").map(Number);
   return `${String((hours + 1) % 24).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
-
