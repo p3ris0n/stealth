@@ -15,10 +15,9 @@ Recommended internal structure:
 - components/
 - services/
 - hooks/
-- 	ests/
+- tests/
 - docs/
-"@ | Set-Content -Path "tools/v2/individual/readability-improver/README.md"
-  @"
+
 # Readability Improver Specs
 
 ## Purpose
