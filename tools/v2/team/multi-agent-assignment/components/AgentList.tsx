@@ -19,16 +19,23 @@ export function AgentList({ agents, threads, onStatusChange }: AgentListProps) {
         <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider">
           Team Collaborators ({agents.length})
         </h3>
-        <span className="text-[10px] text-zinc-500">Click status to toggle availability</span>
+        <span className="text-[10px] text-zinc-500" aria-hidden="true">Click status to toggle availability</span>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-        {agents.map((agent) => {
+      {agents.length === 0 ? (
+        <div className="text-center py-8 border border-dashed border-zinc-800 rounded-xl bg-zinc-900/5" role="status" aria-live="polite">
+          <p className="text-xs text-zinc-400 font-medium">No agents found in the roster.</p>
+          <p className="text-[10px] text-zinc-500 mt-1">Check team assignments or refresh data.</p>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1" role="list" aria-label="Team Agents">
+          {agents.map((agent) => {
           const assigned = getAssignedThreads(agent.id);
 
           return (
             <div
               key={agent.id}
+              role="listitem"
               className="p-4 rounded-xl border border-zinc-800/80 bg-zinc-900/30 hover:bg-zinc-900/50 hover:border-zinc-700/80 transition-all duration-200 group flex flex-col justify-between"
             >
               <div>
@@ -47,11 +54,12 @@ export function AgentList({ agents, threads, onStatusChange }: AgentListProps) {
 
                   {/* Interactive Status Selector */}
                   <select
+                    aria-label={`Change status for ${agent.name}`}
                     value={agent.status}
                     onChange={(e) =>
                       onStatusChange(agent.id, e.target.value as "active" | "busy" | "offline")
                     }
-                    className={`text-[11px] font-semibold px-2 py-0.5 rounded border outline-none cursor-pointer bg-zinc-950 transition-all ${
+                    className={`text-[11px] font-semibold px-2 py-0.5 rounded border outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer bg-zinc-950 transition-all ${
                       agent.status === "active"
                         ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10"
                         : agent.status === "busy"
@@ -134,6 +142,7 @@ export function AgentList({ agents, threads, onStatusChange }: AgentListProps) {
           );
         })}
       </div>
+      )}
     </div>
   );
 }

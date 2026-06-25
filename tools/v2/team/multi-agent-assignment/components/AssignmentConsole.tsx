@@ -1,9 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useMultiAgentAssignment } from "../hooks/use-multi-agent-assignment";
 import { AgentList } from "./AgentList";
 import { ThreadList } from "./ThreadList";
 
 export function AssignmentConsole() {
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsInitializing(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
+
   const {
     agents,
     threads,
@@ -106,14 +113,21 @@ export function AssignmentConsole() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 space-y-8 bg-zinc-950 text-zinc-100 rounded-3xl border border-zinc-800/80 shadow-2xl backdrop-blur-xl">
+    <div 
+      className="max-w-6xl mx-auto px-4 py-8 space-y-8 bg-zinc-950 text-zinc-100 rounded-3xl border border-zinc-800/80 shadow-2xl backdrop-blur-xl"
+      role="main"
+      aria-label="Multi-Agent Assignment Console"
+    >
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-zinc-800 pb-6 gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
             Multi-Agent Assignment Console
           </h2>
-          <p className="text-sm text-zinc-400 mt-1.5">
+          <p className="text-sm text-zinc-400 mt-1.5" aria-describedby="console-desc">
+            <span id="console-desc" className="sr-only">
+              Manage and auto-route tickets to the appropriate team members.
+            </span>
             Decentralized workload routing engine. Smart match collaborators based on specialties,
             availability, and balance ratios.
           </p>
@@ -121,22 +135,32 @@ export function AssignmentConsole() {
         <div className="flex gap-2">
           <button
             onClick={() => setShowSimulator(!showSimulator)}
-            className="px-4 py-2 text-xs font-semibold bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 rounded-lg transition"
+            aria-expanded={showSimulator}
+            aria-controls="simulator-panel"
+            className="px-4 py-2 text-xs font-semibold bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-sky-500 text-zinc-300 rounded-lg transition"
           >
             {showSimulator ? "Hide Simulator" : "Show Simulator"}
           </button>
           <button
             onClick={handleAutoRouteAll}
-            className="px-4 py-2 text-xs font-semibold bg-sky-600 hover:bg-sky-500 text-white rounded-lg transition"
+            aria-label="Automatically route all unassigned tickets"
+            className="px-4 py-2 text-xs font-semibold bg-sky-600 hover:bg-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-400 text-white rounded-lg transition"
           >
             ⚡ Auto-Route All
           </button>
         </div>
       </div>
 
-      {/* Simulator Panel */}
+      {isInitializing ? (
+        <div className="flex flex-col items-center justify-center py-20 space-y-4" aria-live="polite" aria-busy="true">
+          <div className="w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-zinc-400 text-sm font-medium">Loading console state...</p>
+        </div>
+      ) : (
+        <>
+          {/* Simulator Panel */}
       {showSimulator && (
-        <div className="p-6 border border-zinc-800/60 rounded-2xl bg-zinc-900/20 backdrop-blur-md space-y-6">
+        <div id="simulator-panel" className="p-6 border border-zinc-800/60 rounded-2xl bg-zinc-900/20 backdrop-blur-md space-y-6">
           <div>
             <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider">
               Inbox Mail Feed Simulator
@@ -267,19 +291,21 @@ export function AssignmentConsole() {
         </div>
       )}
 
-      {/* Simulator feedback banner */}
-      {simSuccess && (
-        <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs font-semibold text-center animate-fade-in">
-          {simSuccess}
-        </div>
-      )}
-      {simError && (
-        <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl text-xs font-semibold text-center animate-fade-in">
-          {simError}
-        </div>
-      )}
+          {/* Simulator feedback banner */}
+          <div aria-live="polite" aria-atomic="true">
+            {simSuccess && (
+              <div className="p-3 mb-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs font-semibold text-center animate-fade-in">
+                {simSuccess}
+              </div>
+            )}
+            {simError && (
+              <div className="p-3 mb-4 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl text-xs font-semibold text-center animate-fade-in">
+                {simError}
+              </div>
+            )}
+          </div>
 
-      {/* Metrics Dashboard */}
+          {/* Metrics Dashboard */}
       <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
         {/* Metric 1 */}
         <div className="p-4 rounded-xl border border-zinc-800/80 bg-zinc-900/20 flex flex-col justify-between">
@@ -370,7 +396,12 @@ export function AssignmentConsole() {
               <span className="text-[10px] text-zinc-500 font-mono">Real-time audit</span>
             </div>
 
-            <div className="max-h-64 overflow-y-auto border border-zinc-800/80 rounded-xl bg-zinc-950 p-3 space-y-2 scrollbar-thin">
+              <div 
+                className="max-h-64 overflow-y-auto border border-zinc-800/80 rounded-xl bg-zinc-950 p-3 space-y-2 scrollbar-thin"
+                role="log"
+                aria-live="polite"
+                aria-label="Activity Logs"
+              >
               {logs.length === 0 ? (
                 <p className="text-[11px] text-zinc-600 italic text-center py-6">
                   No assignment operations logged yet.
@@ -418,11 +449,13 @@ export function AssignmentConsole() {
                     </p>
                   </div>
                 ))
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+        </>
+      )}
     </div>
   );
 }
