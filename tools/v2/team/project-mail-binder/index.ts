@@ -1,11 +1,32 @@
+// Project Mail Binder — module entry point
+// All exports are local to this tool folder.
+
+export { ProjectMailBinder } from "./components";
+export type {
+  BinderProject,
+  BinderMail,
+  BinderState,
+  BinderStateEmpty,
+  BinderStateLoading,
+  BinderStateError,
+  BinderStateSuccess,
+  ProjectId,
+  MailId,
+  ProjectColor,
+} from "./types";
+export { isEmptyState, isLoadingState, isErrorState, isSuccessState, A11Y } from "./types";
 export {
-  BindValidationError,
-  MAX_PROJECTS_PER_BIND,
-  MAX_SUBJECT_PREVIEW_LEN,
-  MAX_THREADS_PER_BIND,
-  isValidUUID,
-  sanitizeBindRequest,
-  sanitizeDisplayString,
-  sanitizeReverseBindRequest,
-} from "./guards";
-export type { BindRequest } from "./guards";
+  seedProjects,
+  seedMails,
+  emptyState,
+  loadingState,
+  errorState,
+  successState,
+  stateByName,
+} from "./fixtures/projects";
+
+// Core logic exports
+export { createProject, deleteProject, bindMail, unbindMail } from "./core";
+export type { CreateProjectParams, BindMailParams, CoreDeps } from "./core";
+
+export { LocalBinderService } from "./service";
