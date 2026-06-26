@@ -14,16 +14,23 @@ const sampleInput = SAMPLE_TEXTS[0].input;
 const onChange = () => {};
 const onSubmit = () => {};
 
-function isElement(n: unknown): n is ReactElement {
+/** Local typed shape so `props` is accessible as Record<string, unknown>. */
+type TypedElement = Omit<ReactElement, "props"> & { props: Record<string, unknown> };
+
+function isElement(n: unknown): n is TypedElement {
   return (
-    typeof n === "object" && n !== null && "type" in n && "props" in (n as Record<string, unknown>)
+    typeof n === "object" &&
+    n !== null &&
+    "type" in n &&
+    "props" in (n as Record<string, unknown>) &&
+    typeof (n as Record<string, unknown>).props === "object"
   );
 }
 
 function findInTree(
   node: ReactNode,
-  predicate: (el: ReactElement) => boolean,
-): ReactElement | null {
+  predicate: (el: TypedElement) => boolean,
+): TypedElement | null {
   if (!isElement(node)) return null;
   if (predicate(node)) return node;
   const children = node.props.children;
@@ -36,7 +43,7 @@ function findInTree(
   return null;
 }
 
-function hasElement(node: ReactNode, predicate: (el: ReactElement) => boolean): boolean {
+function hasElement(node: ReactNode, predicate: (el: TypedElement) => boolean): boolean {
   return findInTree(node, predicate) !== null;
 }
 
