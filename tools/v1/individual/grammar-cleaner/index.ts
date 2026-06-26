@@ -5,3 +5,6 @@
 
 export * from "./services/grammarCleaner";
 export * from "./services/fixtures";
+export * from "./services/guards";
+export * from "./hooks";
+export * from "./components";
