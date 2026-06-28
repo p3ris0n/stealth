@@ -61,6 +61,7 @@ export const MAX_BODY_CHARS_TO_SCAN = 12_000;
 export const MAX_LABELS = 20;
 export const MAX_LABEL_LENGTH = 40;
 
+// eslint-disable-next-line no-control-regex
 const CONTROL_CHARACTER_PATTERN = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
 const HTML_TAG_PATTERN = /<[^>]*>/g;
 
