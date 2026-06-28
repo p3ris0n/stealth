@@ -38,6 +38,7 @@ function escapeRegExp(value: string): string {
 
 export function sanitizeAttachmentFilename(filename: string): string {
   const lastSegment = filename.replace(/\\/g, "/").split("/").pop() || "attachment";
+  // eslint-disable-next-line no-control-regex
   const withoutControls = lastSegment.replace(/[\u0000-\u001f\u007f]/g, "");
   const sanitized = withoutControls.replace(/[^a-zA-Z0-9._-]/g, "_").replace(/^\.+/, "");
   return (sanitized || "attachment").slice(0, MAX_FILENAME_LENGTH);
@@ -51,7 +52,12 @@ function extractHeaderValue(headers: string, name: string): string | undefined {
 
 function extractParameter(header: string | undefined, parameter: string): string | undefined {
   if (!header) return undefined;
-  const quoted = header.match(new RegExp(`${parameter}\\*=\\s*([^;]+)|${parameter}=\\s*"([^"]*)"|${parameter}=\\s*([^;]+)`, "i"));
+  const quoted = header.match(
+    new RegExp(
+      `${parameter}\\*=\\s*([^;]+)|${parameter}=\\s*"([^"]*)"|${parameter}=\\s*([^;]+)`,
+      "i",
+    ),
+  );
   const rawValue = quoted?.[1] || quoted?.[2] || quoted?.[3];
   if (!rawValue) return undefined;
 
@@ -99,7 +105,11 @@ export async function extractAttachments(
     }
 
     if (byteLength(rawPayload) > maxPayloadBytes) {
-      return { success: false, attachments: [], error: "Raw payload exceeds the safe parsing limit." };
+      return {
+        success: false,
+        attachments: [],
+        error: "Raw payload exceeds the safe parsing limit.",
+      };
     }
 
     const boundary = parseBoundary(rawPayload);
@@ -107,11 +117,18 @@ export async function extractAttachments(
       return { success: true, attachments: [], warnings: ["No safe multipart boundary found."] };
     }
 
-    const delimiter = new RegExp(`(?:^|\\r?\\n)--${escapeRegExp(boundary)}(?:--)?(?:\\r?\\n|$)`, "g");
+    const delimiter = new RegExp(
+      `(?:^|\\r?\\n)--${escapeRegExp(boundary)}(?:--)?(?:\\r?\\n|$)`,
+      "g",
+    );
     const parts = rawPayload.split(delimiter);
 
     if (parts.length > maxParts) {
-      return { success: false, attachments: [], error: "Multipart payload contains too many parts." };
+      return {
+        success: false,
+        attachments: [],
+        error: "Multipart payload contains too many parts.",
+      };
     }
 
     const attachments: AttachmentMetadata[] = [];
@@ -127,7 +144,9 @@ export async function extractAttachments(
 
       const contentType = extractHeaderValue(headers, "Content-Type") || "application/octet-stream";
       const filename = sanitizeAttachmentFilename(
-        extractParameter(disposition, "filename") || extractParameter(contentType, "name") || "attachment",
+        extractParameter(disposition, "filename") ||
+          extractParameter(contentType, "name") ||
+          "attachment",
       );
       const size = byteLength(body);
 

@@ -51,7 +51,13 @@ export type ExtractionResult = {
 export type ExtractionError = {
   filename: string;
   mimeType?: string;
-  reason: "unsupported_type" | "file_too_large" | "too_many_files" | "batch_too_large" | "invalid_data" | "unknown";
+  reason:
+    | "unsupported_type"
+    | "file_too_large"
+    | "too_many_files"
+    | "batch_too_large"
+    | "invalid_data"
+    | "unknown";
   message: string;
 };
 

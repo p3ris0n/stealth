@@ -104,6 +104,7 @@ export function categorizeMimeType(
  */
 export function sanitizeFileName(filename: string): string {
   const lastSegment = filename.replace(/\\/g, "/").split("/").pop() || "attachment";
+  // eslint-disable-next-line no-control-regex
   const withoutControls = lastSegment.replace(/[\u0000-\u001f\u007f]/g, "");
   const sanitized = withoutControls.replace(/[^a-zA-Z0-9._-]/g, "_").replace(/^\.+/, "");
   return (sanitized || "attachment").slice(0, 180);
@@ -137,7 +138,10 @@ export function validateFile(
   file: File,
   options: ExtractionOptions,
 ): { valid: boolean; error?: ExtractionError } {
-  const maxSize = Math.min(options.maxFileSize || DEFAULT_CONFIG.maxFileSize, DEFAULT_CONFIG.maxFileSize);
+  const maxSize = Math.min(
+    options.maxFileSize || DEFAULT_CONFIG.maxFileSize,
+    DEFAULT_CONFIG.maxFileSize,
+  );
   const allowedTypes = options.allowedMimeTypes || DEFAULT_CONFIG.allowedMimeTypes;
   const mimeType = normalizeMimeType(file.type);
   const filename = sanitizeFileName(file.name);
@@ -328,7 +332,10 @@ export async function extractAttachments(
     return { success: false, attachments, errors, stats: calculateStats(attachments, errors) };
   }
 
-  const totalInputSize = files.reduce((sum, file) => sum + (Number.isFinite(file.size) ? file.size : 0), 0);
+  const totalInputSize = files.reduce(
+    (sum, file) => sum + (Number.isFinite(file.size) ? file.size : 0),
+    0,
+  );
   if (totalInputSize > maxTotalSize) {
     errors.push({
       filename: "batch",

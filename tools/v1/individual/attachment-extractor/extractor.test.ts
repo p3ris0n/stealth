@@ -66,7 +66,11 @@ describe("Attachment Extractor - Safety guards", () => {
   });
 
   it("should reject multipart payloads with too many parts", async () => {
-    const payload = ['Content-Type: multipart/mixed; boundary="b"', Array.from({ length: 6 }, () => "--b\r\nContent-Type: text/plain\r\n\r\nBody").join("\r\n"), "--b--"].join("\r\n");
+    const payload = [
+      'Content-Type: multipart/mixed; boundary="b"',
+      Array.from({ length: 6 }, () => "--b\r\nContent-Type: text/plain\r\n\r\nBody").join("\r\n"),
+      "--b--",
+    ].join("\r\n");
     const result = await extractAttachments(payload, { maxParts: 3 });
     expect(result.success).toBe(false);
     expect(result.error).toContain("too many parts");
