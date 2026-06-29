@@ -194,9 +194,46 @@ mod test {
         testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation, Ledger},
         IntoVal,
     };
+    use stealth_lifecycle::{LifecycleContract, LifecycleContractClient};
+    use stealth_policies::{MailboxPolicy, PoliciesContract, PoliciesContractClient};
 
     fn hash(env: &Env, byte: u8) -> BytesN<32> {
         BytesN::from_array(env, &[byte; 32])
+    }
+
+    fn configure_lifecycle(
+        env: &Env,
+        receipts: &Address,
+        message_id: &BytesN<32>,
+        sender: &Address,
+        recipient: &Address,
+    ) {
+        let policies = env.register(PoliciesContract, ());
+        let policies_client = PoliciesContractClient::new(env, &policies);
+        policies_client.set_policy(
+            &recipient.clone(),
+            &MailboxPolicy {
+                allow_unknown: true,
+                require_verified: false,
+                require_receipt: false,
+                minimum_postage: 0,
+            },
+        );
+
+        let postage = Address::generate(env);
+        let lifecycle = env.register(LifecycleContract, ());
+        let lifecycle_client = LifecycleContractClient::new(env, &lifecycle);
+        lifecycle_client.initialize(&policies, &postage, receipts);
+        ReceiptsContractClient::new(env, receipts).configure_guard(&lifecycle);
+        lifecycle_client.bind(
+            message_id,
+            &recipient.clone(),
+            &sender.clone(),
+            &recipient.clone(),
+            &0_i128,
+            &false,
+            &true,
+        );
     }
 
     #[test]
@@ -209,6 +246,7 @@ mod test {
         let recipient = Address::generate(&env);
         let message_id = hash(&env, 7);
         let payload_hash = hash(&env, 8);
+        configure_lifecycle(&env, &contract_id, &message_id, &sender, &recipient);
 
         env.ledger().set_timestamp(10);
         let delivered = client.delivered(&message_id, &payload_hash, &1, &sender, &recipient);
@@ -233,6 +271,7 @@ mod test {
         let sender = Address::generate(&env);
         let recipient = Address::generate(&env);
         let message_id = hash(&env, 7);
+        configure_lifecycle(&env, &contract_id, &message_id, &sender, &recipient);
 
         client.delivered(&message_id, &hash(&env, 8), &1, &sender, &recipient);
         assert_eq!(
@@ -254,6 +293,7 @@ mod test {
         let recipient = Address::generate(&env);
         let message_id = hash(&env, 7);
         let payload_hash = hash(&env, 8);
+        configure_lifecycle(&env, &contract_id, &message_id, &sender, &recipient);
 
         client.delivered(&message_id, &payload_hash, &1, &sender, &recipient);
         assert_eq!(
@@ -275,6 +315,7 @@ mod test {
         let recipient = Address::generate(&env);
         let message_id = hash(&env, 7);
         let payload_hash = hash(&env, 8);
+        configure_lifecycle(&env, &contract_id, &message_id, &sender, &recipient);
 
         env.ledger().set_timestamp(10);
         client.delivered(&message_id, &payload_hash, &1, &sender, &recipient);
@@ -295,6 +336,7 @@ mod test {
         let recipient = Address::generate(&env);
         let message_id = hash(&env, 7);
         let payload_hash = hash(&env, 8);
+        configure_lifecycle(&env, &contract_id, &message_id, &sender, &recipient);
 
         client.delivered(&message_id, &payload_hash, &1, &sender, &recipient);
         assert_eq!(
