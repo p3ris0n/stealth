@@ -4,10 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
-import {
-  validateDashboardData,
-  validateSourceReports,
-} from "../guards/analytics-guards.mjs";
+import { validateDashboardData, validateSourceReports } from "../guards/analytics-guards.mjs";
 import { AnalyticsError, AnalyticsErrorCode } from "../guards/analytics-errors.mjs";
 import { generateDashboardReport } from "../services/analytics-dashboard.service.mjs";
 import { generateSnapshots } from "../services/analytics-snapshot.service.mjs";
@@ -63,9 +60,7 @@ test("invalid dashboard payloads raise the documented error codes", async () => 
   for (const testCase of fixture.dashboardCases) {
     assert.throws(
       () => validateDashboardData(testCase.input),
-      (error) =>
-        error instanceof AnalyticsError &&
-        error.code === testCase.expectedErrorCode,
+      (error) => error instanceof AnalyticsError && error.code === testCase.expectedErrorCode,
       "expected " + testCase.expectedErrorCode + " for case " + testCase.name,
     );
   }
@@ -76,9 +71,7 @@ test("invalid source-report payloads raise the documented error codes", async ()
   for (const testCase of fixture.sourceReportCases) {
     assert.throws(
       () => validateSourceReports(testCase.input),
-      (error) =>
-        error instanceof AnalyticsError &&
-        error.code === testCase.expectedErrorCode,
+      (error) => error instanceof AnalyticsError && error.code === testCase.expectedErrorCode,
       "expected " + testCase.expectedErrorCode + " for case " + testCase.name,
     );
   }

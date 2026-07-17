@@ -15,12 +15,20 @@
     },
     {
       "name": "member is not an object",
-      "input": { "teamId": "team-x", "period": { "start": "2026-06-09", "end": "2026-06-15" }, "members": [null] },
+      "input": {
+        "teamId": "team-x",
+        "period": { "start": "2026-06-09", "end": "2026-06-15" },
+        "members": [null]
+      },
       "expectedErrorCode": "INVALID_MEMBER_ITEM"
     },
     {
       "name": "member missing memberId",
-      "input": { "teamId": "team-x", "period": { "start": "2026-06-09", "end": "2026-06-15" }, "members": [{ "name": "No Id" }] },
+      "input": {
+        "teamId": "team-x",
+        "period": { "start": "2026-06-09", "end": "2026-06-15" },
+        "members": [{ "name": "No Id" }]
+      },
       "expectedErrorCode": "INVALID_MEMBER_ID"
     }
   ],

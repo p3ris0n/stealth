@@ -12,10 +12,7 @@ export function validateDashboardData(data) {
   }
 
   if (!Array.isArray(data.members)) {
-    throw new AnalyticsError(
-      AnalyticsErrorCode.INVALID_MEMBERS,
-      "data.members must be an array",
-    );
+    throw new AnalyticsError(AnalyticsErrorCode.INVALID_MEMBERS, "data.members must be an array");
   }
 
   if (data.members.length > MAX_MEMBERS) {
@@ -33,10 +30,7 @@ export function validateDashboardData(data) {
       );
     }
     if (typeof member.memberId !== "string") {
-      throw new AnalyticsError(
-        AnalyticsErrorCode.INVALID_MEMBER_ID,
-        "memberId must be a string",
-      );
+      throw new AnalyticsError(AnalyticsErrorCode.INVALID_MEMBER_ID, "memberId must be a string");
     }
   }
 }
