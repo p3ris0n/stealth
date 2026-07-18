@@ -6,10 +6,10 @@ independently of any presentation layer. All types live in
 
 ## Entry points
 
-| Export | Kind | Use when |
-| --- | --- | --- |
-| `safeExtractTasks(input: unknown, options?: unknown): SafeTaskExtractionResult` | Guarded service entry point | Caller input is untrusted (API handlers, queue consumers). Never throws. |
-| `extractTasks(input: TaskExtractionInput, options?: TaskExtractionOptions): TaskExtractionResult` | Pure engine | Input is already validated and sanitized (e.g. replaying fixtures, internal pipelines). |
+| Export                                                                                            | Kind                        | Use when                                                                                |
+| ------------------------------------------------------------------------------------------------- | --------------------------- | --------------------------------------------------------------------------------------- |
+| `safeExtractTasks(input: unknown, options?: unknown): SafeTaskExtractionResult`                   | Guarded service entry point | Caller input is untrusted (API handlers, queue consumers). Never throws.                |
+| `extractTasks(input: TaskExtractionInput, options?: TaskExtractionOptions): TaskExtractionResult` | Pure engine                 | Input is already validated and sanitized (e.g. replaying fixtures, internal pipelines). |
 
 Both functions are pure and deterministic: no network calls, no mailbox access,
 no randomness, no clock reads, and no mutation of caller-supplied objects.
@@ -21,17 +21,17 @@ Identical input always produces an identical result. Relative due phrases
 
 ```ts
 interface TaskExtractionInput {
-  messageId: string;      // required, non-empty; echoed back and used in task ids
-  subject: string;        // may be empty when body is not
-  body: string;           // plain text; may be empty when subject is not
+  messageId: string; // required, non-empty; echoed back and used in task ids
+  subject: string; // may be empty when body is not
+  body: string; // plain text; may be empty when subject is not
   senderAddress?: string; // correlation only — never analyzed
-  receivedAt?: string;    // ISO 8601; enables relative due-date resolution
-  language?: string;      // BCP 47; only "en" / "en-*" supported
+  receivedAt?: string; // ISO 8601; enables relative due-date resolution
+  language?: string; // BCP 47; only "en" / "en-*" supported
 }
 
 interface TaskExtractionOptions {
-  maxTasks?: number;                          // 1–50, default 10
-  minConfidence?: "low" | "medium" | "high";  // default "low" (keep all)
+  maxTasks?: number; // 1–50, default 10
+  minConfidence?: "low" | "medium" | "high"; // default "low" (keep all)
 }
 ```
 
@@ -40,19 +40,19 @@ interface TaskExtractionOptions {
 ```ts
 interface TaskExtractionResult {
   messageId: string;
-  tasks: ExtractedTask[];      // order of appearance, truncated to maxTasks
-  stats: TaskExtractionStats;  // lineCount, candidateCount, extractedCount, truncated
+  tasks: ExtractedTask[]; // order of appearance, truncated to maxTasks
+  stats: TaskExtractionStats; // lineCount, candidateCount, extractedCount, truncated
 }
 
 interface ExtractedTask {
-  id: string;             // deterministic: `<messageId>-task-<n>`
-  text: string;           // trimmed, whitespace-collapsed, ≤ 200 chars
+  id: string; // deterministic: `<messageId>-task-<n>`
+  text: string; // trimmed, whitespace-collapsed, ≤ 200 chars
   source: "subject" | "body";
   trigger: "checkbox" | "request-phrase" | "bullet-action" | "imperative-line";
   priority: "low" | "normal" | "high";
   confidence: "low" | "medium" | "high";
-  dueAtHint?: string;     // YYYY-MM-DD when resolvable
-  dueTextHint?: string;   // raw phrase (e.g. "friday") when not resolvable
+  dueAtHint?: string; // YYYY-MM-DD when resolvable
+  dueTextHint?: string; // raw phrase (e.g. "friday") when not resolvable
 }
 ```
 
@@ -63,29 +63,34 @@ The guarded entry point wraps this in a discriminated union:
 ```ts
 type SafeTaskExtractionResult =
   | { status: "ok"; result: TaskExtractionResult }
-  | { status: "error"; code: TaskExtractionErrorCode; message: string; issues: TaskExtractionIssue[] };
+  | {
+      status: "error";
+      code: TaskExtractionErrorCode;
+      message: string;
+      issues: TaskExtractionIssue[];
+    };
 ```
 
 ## Error codes
 
-| Code | Trigger |
-| --- | --- |
-| `invalid-input` | Payload is not an object, `messageId` missing or blank, `subject`/`body` not strings, `receivedAt` unparseable, or optional fields have wrong types. |
-| `invalid-options` | `maxTasks` outside 1–50, or `minConfidence` not low/medium/high. |
-| `input-too-large` | `messageId` > 256 chars, `subject` > 500 chars, `body` > 50,000 chars or > 10,000 words (limits in `GUARD_LIMITS`). |
-| `empty-content` | Subject and body are both empty after sanitization. |
-| `unsupported-language` | `language` is set and is not `en` or an `en-*` regional tag. |
+| Code                   | Trigger                                                                                                                                              |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `invalid-input`        | Payload is not an object, `messageId` missing or blank, `subject`/`body` not strings, `receivedAt` unparseable, or optional fields have wrong types. |
+| `invalid-options`      | `maxTasks` outside 1–50, or `minConfidence` not low/medium/high.                                                                                     |
+| `input-too-large`      | `messageId` > 256 chars, `subject` > 500 chars, `body` > 50,000 chars or > 10,000 words (limits in `GUARD_LIMITS`).                                  |
+| `empty-content`        | Subject and body are both empty after sanitization.                                                                                                  |
+| `unsupported-language` | `language` is set and is not `en` or an `en-*` regional tag.                                                                                         |
 
 ## Extraction rules
 
 Rule-based and folder-local; scanned per line, in order of appearance:
 
-| Trigger | Matches | Confidence |
-| --- | --- | --- |
-| `checkbox` | `- [ ] <task>` style items | high |
-| `request-phrase` | "please …", "can/could/would you …", "make sure to …", "remember / don't forget to …", "action required: …", "we/you need to …" | high |
-| `bullet-action` | Bullet or numbered item starting with an action verb (`ACTION_VERBS`) | medium |
-| `imperative-line` | A whole line starting with an action verb | low |
+| Trigger           | Matches                                                                                                                         | Confidence |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| `checkbox`        | `- [ ] <task>` style items                                                                                                      | high       |
+| `request-phrase`  | "please …", "can/could/would you …", "make sure to …", "remember / don't forget to …", "action required: …", "we/you need to …" | high       |
+| `bullet-action`   | Bullet or numbered item starting with an action verb (`ACTION_VERBS`)                                                           | medium     |
+| `imperative-line` | A whole line starting with an action verb                                                                                       | low        |
 
 - **Priority**: "urgent", "asap", "critical", "high priority", … → `high`;
   "no rush", "when you get a chance", … → `low`; otherwise `normal`.
