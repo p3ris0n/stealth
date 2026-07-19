@@ -34,7 +34,11 @@
       },
       "MailboxPolicy": {
         "type": "object",
-        "required": ["allowUnknown", "minimumPostage", "requireVerified"],
+        "required": [
+          "allowUnknown",
+          "minimumPostage",
+          "requireVerified"
+        ],
         "properties": {
           "allowUnknown": {
             "type": "boolean"
