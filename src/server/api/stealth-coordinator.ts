@@ -1,7 +1,17 @@
-import { DurableObject } from "cloudflare:workers";
 import type { IdempotencyRecord } from "./domain";
 
-export class StealthCoordinator extends DurableObject {
+const DurableObjectBase: any = import.meta.env.PROD
+  ? (await import("cloudflare:workers")).DurableObject
+  : class {
+      ctx: any;
+      env: any;
+      constructor(ctx: any, env: any) {
+        this.ctx = ctx;
+        this.env = env;
+      }
+    };
+
+export class StealthCoordinator extends DurableObjectBase {
   constructor(ctx: DurableObjectState, env: any) {
     super(ctx, env);
   }
@@ -24,12 +34,12 @@ export class StealthCoordinator extends DurableObject {
     const now = Date.now();
     const windowMilliseconds = windowSeconds * 1000;
     const timestamps = (await this.ctx.storage.get<number[]>(`counter:${key}`)) ?? [];
-
+    
     // Filter timestamps falling within the sliding window
     const filtered = [...timestamps, now].filter(
       (timestamp) => now - timestamp <= windowMilliseconds,
     );
-
+    
     await this.ctx.storage.put(`counter:${key}`, filtered);
     return filtered.length;
   }
