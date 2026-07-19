@@ -71,7 +71,13 @@ export const Route = createFileRoute("/api/v1/postage/$messageId/settle")({
 
             // Record successful settlement for idempotent replay
             if (rawIdempotencyKey) {
-              await recordIdempotency(repository, current.recipient, rawIdempotencyKey, 200, postage);
+              await recordIdempotency(
+                repository,
+                current.recipient,
+                rawIdempotencyKey,
+                200,
+                postage,
+              );
             }
 
             return apiSuccess(request, postage);

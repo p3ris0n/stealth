@@ -7,6 +7,7 @@ The postage settlement endpoint (`POST /api/v1/postage/:messageId/settle`) imple
 ## Problem Statement
 
 Settlement operations involve critical state transitions in the escrow system:
+
 - Moving postage from `pending` to `settled` releases funds to the recipient
 - Network failures can cause clients to retry settlement requests
 - Without idempotency, retries could result in conflicting responses or ambiguous system state
@@ -206,6 +207,7 @@ hashIdempotencyKey(actor: string, rawKey: string): string {
 ```
 
 This ensures:
+
 - Recipient A cannot replay responses meant for Recipient B
 - Same key used by different recipients produces different cache entries
 - No cross-actor information leakage
@@ -213,6 +215,7 @@ This ensures:
 ### Key Hashing
 
 Raw idempotency keys are hashed before storage:
+
 - Prevents key leakage in logs or database exports
 - Provides consistent 64-character hex identifiers
 - SHA-256 is computationally secure for this use case
@@ -229,6 +232,7 @@ Raw idempotency keys are hashed before storage:
 ### Test Coverage
 
 The test suite covers:
+
 - ✅ Deterministic terminal states (settled/refunded)
 - ✅ Success response replay
 - ✅ Terminal error response replay (409)
@@ -262,27 +266,27 @@ const idempotencyKey = `settlement-${messageId}-${Date.now()}-${Math.random()}`;
 ```javascript
 async function settleWithRetry(messageId, maxRetries = 3) {
   const idempotencyKey = crypto.randomUUID();
-  
+
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       const response = await fetch(`/api/v1/postage/${messageId}/settle`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'X-Idempotency-Key': idempotencyKey,
+          Authorization: `Bearer ${token}`,
+          "X-Idempotency-Key": idempotencyKey,
         },
       });
-      
+
       if (response.ok) {
-        const wasReplayed = response.headers.get('X-Idempotency-Replayed');
+        const wasReplayed = response.headers.get("X-Idempotency-Replayed");
         return await response.json();
       }
-      
+
       if (response.status === 409) {
         // Terminal state - don't retry
-        throw new Error('Postage already resolved');
+        throw new Error("Postage already resolved");
       }
-      
+
       // Retry transient errors
       await sleep(Math.pow(2, attempt) * 1000);
     } catch (error) {
@@ -301,6 +305,7 @@ async function settleWithRetry(messageId, maxRetries = 3) {
 ## Related Endpoints
 
 The same idempotency pattern is also used in:
+
 - `POST /api/v1/postage/` (postage submission)
 
 Future endpoints that modify critical state should adopt this pattern.

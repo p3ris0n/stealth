@@ -13,12 +13,14 @@
 ### ✅ Repeated settlement calls for the same message are deterministic
 
 **Implementation**:
+
 - Added `X-Idempotency-Key` header support to settlement endpoint
 - Idempotency keys are hashed with SHA-256 and scoped per recipient (actor isolation)
 - Cached responses (both success and terminal errors) are replayed for repeated calls
 - Terminal state transitions (pending → settled, pending → refunded) produce consistent 409 errors
 
 **Evidence**:
+
 ```typescript
 // From settle.ts
 const rawIdempotencyKey = request.headers.get("x-idempotency-key");
@@ -59,13 +61,16 @@ if (rawIdempotencyKey) {
 ### ✅ Response bodies explain terminal-state outcomes
 
 **Implementation** (from `postage-service.ts`):
+
 ```typescript
 if (postage.status !== "pending") {
   const explanations: Record<string, string> = {
-    settled: "Postage has already been settled. The escrow was previously released to the recipient.",
-    refunded: "Postage has already been refunded. The escrow was previously returned to the sender.",
+    settled:
+      "Postage has already been settled. The escrow was previously released to the recipient.",
+    refunded:
+      "Postage has already been refunded. The escrow was previously returned to the sender.",
   };
-  
+
   throw new ApiError(409, "conflict", explanation, {
     currentStatus: postage.status,
     attemptedStatus: status,
@@ -75,6 +80,7 @@ if (postage.status !== "pending") {
 ```
 
 **Example Response**:
+
 ```json
 {
   "error": {
@@ -125,25 +131,28 @@ if (postage.status !== "pending") {
 ## Verification
 
 ### Build Status
+
 ✅ Build completed successfully with no errors
 
 ### Test Status
+
 ✅ All 660 unit tests passing (59 test files)
+
 - Existing postage service tests: ✅ Pass
 - New idempotency tests: ✅ Pass
 - Protocol vector tests: ✅ Pass (updated for new error message)
 
 ### Key Test Scenarios Verified
 
-| Scenario | Status | Test Name |
-|----------|--------|-----------|
-| Settle pending postage | ✅ Pass | resolvePostage - deterministic terminal states |
-| Retry settled postage | ✅ Pass | retry-after-success |
-| Retry refunded postage | ✅ Pass | retry-after-terminal-state |
-| Actor isolation | ✅ Pass | actor isolation tests |
-| Network failure retries | ✅ Pass | network failure scenarios |
-| Multiple operations | ✅ Pass | different keys for different operations |
-| Data integrity | ✅ Pass | preserves postage data across retries |
+| Scenario                | Status  | Test Name                                      |
+| ----------------------- | ------- | ---------------------------------------------- |
+| Settle pending postage  | ✅ Pass | resolvePostage - deterministic terminal states |
+| Retry settled postage   | ✅ Pass | retry-after-success                            |
+| Retry refunded postage  | ✅ Pass | retry-after-terminal-state                     |
+| Actor isolation         | ✅ Pass | actor isolation tests                          |
+| Network failure retries | ✅ Pass | network failure scenarios                      |
+| Multiple operations     | ✅ Pass | different keys for different operations        |
+| Data integrity          | ✅ Pass | preserves postage data across retries          |
 
 ## Commits
 
@@ -174,6 +183,7 @@ if (postage.status !== "pending") {
 ## Backward Compatibility
 
 ✅ Fully backward compatible:
+
 - `X-Idempotency-Key` header is optional
 - Existing clients without the header work unchanged
 - No breaking API changes
@@ -181,6 +191,7 @@ if (postage.status !== "pending") {
 ## Future Enhancements
 
 Potential improvements for future iterations:
+
 - TTL on cached idempotency records (e.g., 24 hours)
 - Metrics for idempotency replay rates
 - Support for refund endpoint idempotency
@@ -189,6 +200,7 @@ Potential improvements for future iterations:
 ## Conclusion
 
 All acceptance criteria have been met:
+
 - ✅ Deterministic settlement behavior
 - ✅ Comprehensive test coverage for retry scenarios
 - ✅ Clear, actionable error messages for terminal states

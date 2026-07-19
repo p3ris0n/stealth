@@ -2,10 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { MemoryApiRepository } from "../../../src/server/api/memory-repository";
 import { resolvePostage, getPostage } from "../../../src/server/api/postage-service";
-import {
-  checkIdempotency,
-  recordIdempotency,
-} from "../../../src/server/api/idempotency-service";
+import { checkIdempotency, recordIdempotency } from "../../../src/server/api/idempotency-service";
 
 const recipient = `G${"A".repeat(55)}`;
 const sender = `G${"B".repeat(55)}`;
@@ -370,13 +367,13 @@ describe("Postage Settlement Idempotency", () => {
       const repository = new MemoryApiRepository();
       const nonExistentMessageId = "z".repeat(64);
 
-      await expect(resolvePostage(repository, nonExistentMessageId, "settled")).rejects.toMatchObject(
-        {
-          status: 404,
-          code: "not_found",
-          message: "Postage was not found",
-        },
-      );
+      await expect(
+        resolvePostage(repository, nonExistentMessageId, "settled"),
+      ).rejects.toMatchObject({
+        status: 404,
+        code: "not_found",
+        message: "Postage was not found",
+      });
     });
 
     it("preserves postage data integrity across settlement retries", async () => {
