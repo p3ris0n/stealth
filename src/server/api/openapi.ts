@@ -1,4 +1,4 @@
-const actorSecurity = [{ ActorHeader: [] }];
+const signedRequestSecurity = [{ StellarSignedRequest: [] }];
 
 export const openApiDocument = {
   openapi: "3.1.0",
@@ -11,6 +11,23 @@ export const openApiDocument = {
   servers: [{ url: "/api/v1" }],
   components: {
     securitySchemes: {
+      StellarSignedRequest: {
+        type: "http",
+        scheme: "bearer",
+        bearerFormat: "SEP-10 JWT",
+        description:
+          "Authenticates a Stellar account through the [SEP-10 Web Authentication](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0010.md) challenge flow. Fetch a short-lived challenge transaction from the service's WEB_AUTH_ENDPOINT, verify the server signature and transaction fields, sign the challenge with an authorized Stellar account signer, and exchange the signed transaction for a token. Send that token on protected API calls as `Authorization: Bearer <SEP-10-token>`. Never send a Stellar secret seed. The server derives the actor from the verified token and enforces challenge expiry and replay protection; `x-stealth-address` alone is not proof of identity.",
+        "x-required-headers": ["Authorization"],
+        "x-signing-specification":
+          "https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0010.md",
+        "x-challenge-flow": [
+          "Request a challenge transaction from the WEB_AUTH_ENDPOINT for the Stellar account.",
+          "Validate the challenge according to SEP-10 before signing it.",
+          "Sign the challenge with an authorized account signer and return the signed transaction.",
+          "Use the returned short-lived token in the Authorization header for protected operations.",
+        ],
+        "x-header-example": "Authorization: Bearer <SEP-10-token>",
+      },
       ActorHeader: {
         type: "apiKey",
         in: "header",
@@ -115,7 +132,7 @@ export const openApiDocument = {
       put: {
         operationId: "replaceMailboxPolicy",
         summary: "Replace mailbox policy",
-        security: actorSecurity,
+        security: signedRequestSecurity,
         "x-stability": "stable",
       },
     },
@@ -128,13 +145,13 @@ export const openApiDocument = {
       put: {
         operationId: "setSenderOverride",
         summary: "Set a sender override",
-        security: actorSecurity,
+        security: signedRequestSecurity,
         "x-stability": "stable",
       },
       delete: {
         operationId: "resetSenderOverride",
         summary: "Reset a sender override",
-        security: actorSecurity,
+        security: signedRequestSecurity,
         "x-stability": "stable",
       },
     },
@@ -149,7 +166,7 @@ export const openApiDocument = {
       post: {
         operationId: "submitPostageProof",
         summary: "Submit a postage proof",
-        security: actorSecurity,
+        security: signedRequestSecurity,
         "x-stability": "stable",
       },
     },
@@ -164,7 +181,7 @@ export const openApiDocument = {
       get: {
         operationId: "getPostageState",
         summary: "Read participant postage state",
-        security: actorSecurity,
+        security: signedRequestSecurity,
         "x-stability": "stable",
       },
     },
@@ -172,7 +189,7 @@ export const openApiDocument = {
       post: {
         operationId: "settlePostage",
         summary: "Settle pending postage",
-        security: actorSecurity,
+        security: signedRequestSecurity,
         "x-stability": "stable",
       },
     },
@@ -180,7 +197,7 @@ export const openApiDocument = {
       post: {
         operationId: "refundPostage",
         summary: "Mark pending postage for refund",
-        security: actorSecurity,
+        security: signedRequestSecurity,
         "x-stability": "stable",
       },
     },
@@ -188,7 +205,7 @@ export const openApiDocument = {
       post: {
         operationId: "recordDelivery",
         summary: "Record message delivery",
-        security: actorSecurity,
+        security: signedRequestSecurity,
         "x-stability": "stable",
       },
     },
@@ -196,7 +213,7 @@ export const openApiDocument = {
       get: {
         operationId: "getReceiptState",
         summary: "Read participant receipt state",
-        security: actorSecurity,
+        security: signedRequestSecurity,
         "x-stability": "stable",
       },
     },
@@ -204,7 +221,7 @@ export const openApiDocument = {
       post: {
         operationId: "recordReadAcknowledgment",
         summary: "Record recipient read acknowledgment",
-        security: actorSecurity,
+        security: signedRequestSecurity,
         "x-stability": "deprecated",
         deprecated: true,
         "x-deprecation": {
