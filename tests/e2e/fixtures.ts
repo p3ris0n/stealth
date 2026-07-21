@@ -77,11 +77,11 @@ export class ApiHelper {
 
     return this.page.request.post("/api/v1/postage/", {
       headers: this.headers(sender),
-      data: { 
-        amount, 
-        messageId, 
-        paymentHash, 
-        recipient, 
+      data: {
+        amount,
+        messageId,
+        paymentHash,
+        recipient,
         sender,
         issuedAt: quoteData.issuedAt,
         expiresAt: quoteData.expiresAt,
