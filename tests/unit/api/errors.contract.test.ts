@@ -43,7 +43,9 @@ describe("validation error contract", () => {
   });
 
   it("classifies rate limit errors as rate_limited and retryable, preserving delay", () => {
-    const error = normalizeApiError(new ApiError(429, "too_many_requests", "Too many requests", { retryAfterSeconds: 15 }));
+    const error = normalizeApiError(
+      new ApiError(429, "too_many_requests", "Too many requests", { retryAfterSeconds: 15 }),
+    );
     expect(error.retryable).toBe(true);
     expect(error.retryClassification).toBe("rate_limit");
     expect(error.retryAfterSeconds).toBe(15);
