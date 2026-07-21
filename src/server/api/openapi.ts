@@ -130,6 +130,57 @@ export const openApiDocument = {
           },
         },
       },
+      RetryClassification: {
+        type: "string",
+        enum: ["permanent", "transient", "rate_limit", "conflict"],
+        description: "Stable machine-readable classification of retry eligibility.",
+      },
+      ErrorEnvelope: {
+        type: "object",
+        required: ["error", "meta"],
+        additionalProperties: false,
+        properties: {
+          error: {
+            type: "object",
+            required: ["code", "message", "retryable", "retryClassification"],
+            additionalProperties: false,
+            properties: {
+              code: {
+                type: "string",
+                description: "Stable domain-specific error code.",
+              },
+              message: {
+                type: "string",
+                description: "Human-readable explanation of the error.",
+              },
+              retryable: {
+                type: "boolean",
+                description: "Indicates whether the request can be retried.",
+              },
+              retryClassification: {
+                $ref: "#/components/schemas/RetryClassification",
+              },
+              retryAfter: {
+                type: "integer",
+                description: "Optional delay in seconds before retrying the request.",
+              },
+              details: {
+                type: "object",
+                description: "Structured contextual error details.",
+              },
+            },
+          },
+          meta: {
+            type: "object",
+            required: ["requestId", "timestamp"],
+            additionalProperties: false,
+            properties: {
+              requestId: { type: "string" },
+              timestamp: { type: "string", format: "date-time" },
+            },
+          },
+        },
+      },
     },
   },
   paths: {
