@@ -64,14 +64,21 @@ class MockCoordinatorStub {
     return { created: true, receipt };
   }
 
-  async markReceiptRead(messageId: string, readAt: string) {
+  async markReceiptRead(
+    messageId: string,
+    actor: string,
+    now = new Date(),
+  ): Promise<import("../../../src/server/api/repository").MarkReceiptReadResult> {
     const receipt = this.receipts.get(messageId);
-    if (!receipt) return null;
-    if (receipt.readAt) return { receipt, updated: false };
+    if (!receipt) return { outcome: "not-found" };
+    if (actor !== receipt.sender && actor !== receipt.recipient) {
+      return { outcome: "forbidden" };
+    }
+    if (receipt.readAt) return { outcome: "already-read", readAt: receipt.readAt };
 
-    const updated = { ...receipt, readAt };
+    const updated = { ...receipt, readAt: now.toISOString() };
     this.receipts.set(messageId, updated);
-    return { receipt: updated, updated: true };
+    return { outcome: "marked", receipt: updated };
   }
 }
 
@@ -174,13 +181,17 @@ describe("HybridApiRepository - KV Operations", () => {
     ).resolves.toEqual({ created: false, receipt });
 
     const readReceipt = { ...receipt, readAt: "2026-06-14T12:30:00.000Z" };
-    await expect(repo.markReceiptRead(messageId, readReceipt.readAt)).resolves.toEqual({
+    await expect(
+      repo.markReceiptRead(messageId, owner, new Date(readReceipt.readAt!)),
+    ).resolves.toEqual({
+      outcome: "marked",
       receipt: readReceipt,
-      updated: true,
     });
-    await expect(repo.markReceiptRead(messageId, "2026-06-14T12:45:00.000Z")).resolves.toEqual({
-      receipt: readReceipt,
-      updated: false,
+    await expect(
+      repo.markReceiptRead(messageId, owner, new Date("2026-06-14T12:45:00.000Z")),
+    ).resolves.toEqual({
+      outcome: "already-read",
+      readAt: readReceipt.readAt,
     });
     expect(kv.puts.filter((key) => key === `receipt:${messageId}`)).toHaveLength(2);
   });

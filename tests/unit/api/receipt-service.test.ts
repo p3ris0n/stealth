@@ -63,10 +63,10 @@ describe("receipt service", () => {
     const expectedReadAt = "2026-06-14T12:30:00.000Z";
 
     await expect(
-      markReceiptRead(repository, messageId, new Date(expectedReadAt)),
+      markReceiptRead(repository, messageId, recipient, new Date(expectedReadAt)),
     ).resolves.toMatchObject({ readAt: expectedReadAt });
     await expect(
-      markReceiptRead(repository, messageId, new Date("2026-06-14T12:45:00.000Z")),
+      markReceiptRead(repository, messageId, recipient, new Date("2026-06-14T12:45:00.000Z")),
     ).resolves.toMatchObject({ readAt: expectedReadAt });
   });
 
@@ -95,8 +95,8 @@ describe("receipt service", () => {
     await createDeliveryReceipt(repository, { messageId, recipient, sender });
 
     const [first, second] = await Promise.all([
-      markReceiptRead(repository, messageId, new Date("2026-06-14T12:30:00.000Z")),
-      markReceiptRead(repository, messageId, new Date("2026-06-14T12:45:00.000Z")),
+      markReceiptRead(repository, messageId, recipient, new Date("2026-06-14T12:30:00.000Z")),
+      markReceiptRead(repository, messageId, recipient, new Date("2026-06-14T12:45:00.000Z")),
     ]);
 
     expect(first).toEqual(second);
@@ -113,6 +113,8 @@ describe("receipt service", () => {
 
   it("throws 404 when marking read on a non-existent receipt", async () => {
     const repository = new MemoryApiRepository();
-    await expect(markReceiptRead(repository, "nonexistent")).rejects.toMatchObject({ status: 404 });
+    await expect(markReceiptRead(repository, "nonexistent", recipient)).rejects.toMatchObject({
+      status: 404,
+    });
   });
 });

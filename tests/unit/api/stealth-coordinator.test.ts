@@ -116,11 +116,19 @@ describe("StealthCoordinator - Durable Object Operations", () => {
     await coordinator.setReceipt(receipt);
 
     await expect(
-      coordinator.markReceiptRead(receipt.messageId, "2026-06-14T12:30:00.000Z"),
-    ).resolves.toEqual({ receipt: expected, updated: true });
+      coordinator.markReceiptRead(
+        receipt.messageId,
+        receipt.recipient,
+        new Date("2026-06-14T12:30:00.000Z"),
+      ),
+    ).resolves.toEqual({ outcome: "marked", receipt: expected });
     await expect(
-      coordinator.markReceiptRead(receipt.messageId, "2026-06-14T12:45:00.000Z"),
-    ).resolves.toEqual({ receipt: expected, updated: false });
+      coordinator.markReceiptRead(
+        receipt.messageId,
+        receipt.recipient,
+        new Date("2026-06-14T12:45:00.000Z"),
+      ),
+    ).resolves.toEqual({ outcome: "already-read", readAt: expected.readAt });
   });
 
   describe("postage settlement transitions", () => {
