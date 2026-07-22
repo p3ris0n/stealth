@@ -38,7 +38,8 @@ function updatePolicyRequest(actor?: string, delegationHeader?: unknown) {
     headers[ACTOR_HEADER] = actor;
   }
   if (delegationHeader !== undefined) {
-    headers[DELEGATION_HEADER] = typeof delegationHeader === "string" ? delegationHeader : JSON.stringify(delegationHeader);
+    headers[DELEGATION_HEADER] =
+      typeof delegationHeader === "string" ? delegationHeader : JSON.stringify(delegationHeader);
   }
 
   return new Request(`https://stealth.test/api/v1/policies/${owner}`, {
@@ -60,7 +61,8 @@ function updateSenderRuleRequest(actor?: string, delegationHeader?: unknown) {
     headers[ACTOR_HEADER] = actor;
   }
   if (delegationHeader !== undefined) {
-    headers[DELEGATION_HEADER] = typeof delegationHeader === "string" ? delegationHeader : JSON.stringify(delegationHeader);
+    headers[DELEGATION_HEADER] =
+      typeof delegationHeader === "string" ? delegationHeader : JSON.stringify(delegationHeader);
   }
 
   return new Request(`https://stealth.test/api/v1/policies/${owner}/senders/${targetSender}`, {
@@ -76,7 +78,8 @@ function deleteSenderRuleRequest(actor?: string, delegationHeader?: unknown) {
     headers[ACTOR_HEADER] = actor;
   }
   if (delegationHeader !== undefined) {
-    headers[DELEGATION_HEADER] = typeof delegationHeader === "string" ? delegationHeader : JSON.stringify(delegationHeader);
+    headers[DELEGATION_HEADER] =
+      typeof delegationHeader === "string" ? delegationHeader : JSON.stringify(delegationHeader);
   }
 
   return new Request(`https://stealth.test/api/v1/policies/${owner}/senders/${targetSender}`, {
@@ -132,16 +135,19 @@ describe("policy mutation route actor authorization", () => {
     it.each([
       ["missing actor header", undefined],
       ["invalid stellar address", "invalid-address"],
-    ])("rejects anonymous/invalid principal (%s) with unauthorized error without mutating state", async (_label, actor) => {
-      const response = await updatePolicyHandler({
-        request: updatePolicyRequest(actor),
-        params: { owner },
-      });
+    ])(
+      "rejects anonymous/invalid principal (%s) with unauthorized error without mutating state",
+      async (_label, actor) => {
+        const response = await updatePolicyHandler({
+          request: updatePolicyRequest(actor),
+          params: { owner },
+        });
 
-      expect(response.status).toBe(401);
-      await expect(response.json()).resolves.toMatchObject({ error: { code: "unauthorized" } });
-      await expect(getMailboxPolicy(repo, owner)).resolves.toMatchObject({ source: "default" });
-    });
+        expect(response.status).toBe(401);
+        await expect(response.json()).resolves.toMatchObject({ error: { code: "unauthorized" } });
+        await expect(getMailboxPolicy(repo, owner)).resolves.toMatchObject({ source: "default" });
+      },
+    );
 
     it("allows a valid delegated principal to update mailbox policy", async () => {
       const validDelegation = buildDelegation({
@@ -168,30 +174,33 @@ describe("policy mutation route actor authorization", () => {
     it.each([
       [
         "wrong action scope",
-        buildDelegation({ allowedActions: ["policy:senders:update"], resourceScope: [`mailbox:${owner}:policy`] }),
+        buildDelegation({
+          allowedActions: ["policy:senders:update"],
+          resourceScope: [`mailbox:${owner}:policy`],
+        }),
       ],
       [
         "wrong resource scope",
-        buildDelegation({ allowedActions: ["policy:update"], resourceScope: [`mailbox:${nonOwner}:policy`] }),
+        buildDelegation({
+          allowedActions: ["policy:update"],
+          resourceScope: [`mailbox:${nonOwner}:policy`],
+        }),
       ],
-      [
-        "expired delegation",
-        buildDelegation({ expiresAt: "2020-01-01T00:00:00.000Z" }),
-      ],
-      [
-        "revoked delegation",
-        buildDelegation({ revoked: true }),
-      ],
-    ])("rejects invalid/unscoped delegation (%s) with forbidden error without mutating state", async (_label, delegationConfig) => {
-      const response = await updatePolicyHandler({
-        request: updatePolicyRequest(delegate, delegationConfig),
-        params: { owner },
-      });
+      ["expired delegation", buildDelegation({ expiresAt: "2020-01-01T00:00:00.000Z" })],
+      ["revoked delegation", buildDelegation({ revoked: true })],
+    ])(
+      "rejects invalid/unscoped delegation (%s) with forbidden error without mutating state",
+      async (_label, delegationConfig) => {
+        const response = await updatePolicyHandler({
+          request: updatePolicyRequest(delegate, delegationConfig),
+          params: { owner },
+        });
 
-      expect(response.status).toBe(403);
-      await expect(response.json()).resolves.toMatchObject({ error: { code: "forbidden" } });
-      await expect(getMailboxPolicy(repo, owner)).resolves.toMatchObject({ source: "default" });
-    });
+        expect(response.status).toBe(403);
+        await expect(response.json()).resolves.toMatchObject({ error: { code: "forbidden" } });
+        await expect(getMailboxPolicy(repo, owner)).resolves.toMatchObject({ source: "default" });
+      },
+    );
   });
 
   describe("PUT /api/v1/policies/$owner/senders/$sender", () => {
@@ -245,30 +254,47 @@ describe("policy mutation route actor authorization", () => {
     it.each([
       [
         "wrong action scope",
-        buildDelegation({ allowedActions: ["policy:update"], resourceScope: [`mailbox:${owner}:senders:${targetSender}`] }),
+        buildDelegation({
+          allowedActions: ["policy:update"],
+          resourceScope: [`mailbox:${owner}:senders:${targetSender}`],
+        }),
       ],
       [
         "wrong resource scope",
-        buildDelegation({ allowedActions: ["policy:senders:update"], resourceScope: [`mailbox:${owner}:senders:${nonOwner}`] }),
+        buildDelegation({
+          allowedActions: ["policy:senders:update"],
+          resourceScope: [`mailbox:${owner}:senders:${nonOwner}`],
+        }),
       ],
       [
         "expired delegation",
-        buildDelegation({ allowedActions: ["policy:senders:update"], resourceScope: [`mailbox:${owner}:senders:${targetSender}`], expiresAt: "2020-01-01T00:00:00.000Z" }),
+        buildDelegation({
+          allowedActions: ["policy:senders:update"],
+          resourceScope: [`mailbox:${owner}:senders:${targetSender}`],
+          expiresAt: "2020-01-01T00:00:00.000Z",
+        }),
       ],
       [
         "revoked delegation",
-        buildDelegation({ allowedActions: ["policy:senders:update"], resourceScope: [`mailbox:${owner}:senders:${targetSender}`], revoked: true }),
+        buildDelegation({
+          allowedActions: ["policy:senders:update"],
+          resourceScope: [`mailbox:${owner}:senders:${targetSender}`],
+          revoked: true,
+        }),
       ],
-    ])("rejects invalid/unscoped delegation (%s) with forbidden error without mutating state", async (_label, delegationConfig) => {
-      const response = await updateSenderRuleHandler({
-        request: updateSenderRuleRequest(delegate, delegationConfig),
-        params: { owner, sender: targetSender },
-      });
+    ])(
+      "rejects invalid/unscoped delegation (%s) with forbidden error without mutating state",
+      async (_label, delegationConfig) => {
+        const response = await updateSenderRuleHandler({
+          request: updateSenderRuleRequest(delegate, delegationConfig),
+          params: { owner, sender: targetSender },
+        });
 
-      expect(response.status).toBe(403);
-      await expect(response.json()).resolves.toMatchObject({ error: { code: "forbidden" } });
-      await expect(repo.getSenderRule(owner, targetSender)).resolves.toBe("default");
-    });
+        expect(response.status).toBe(403);
+        await expect(response.json()).resolves.toMatchObject({ error: { code: "forbidden" } });
+        await expect(repo.getSenderRule(owner, targetSender)).resolves.toBe("default");
+      },
+    );
   });
 
   describe("DELETE /api/v1/policies/$owner/senders/$sender", () => {
@@ -327,29 +353,46 @@ describe("policy mutation route actor authorization", () => {
     it.each([
       [
         "wrong action scope",
-        buildDelegation({ allowedActions: ["policy:senders:update"], resourceScope: [`mailbox:${owner}:senders:${targetSender}`] }),
+        buildDelegation({
+          allowedActions: ["policy:senders:update"],
+          resourceScope: [`mailbox:${owner}:senders:${targetSender}`],
+        }),
       ],
       [
         "wrong resource scope",
-        buildDelegation({ allowedActions: ["policy:senders:delete"], resourceScope: [`mailbox:${owner}:senders:${nonOwner}`] }),
+        buildDelegation({
+          allowedActions: ["policy:senders:delete"],
+          resourceScope: [`mailbox:${owner}:senders:${nonOwner}`],
+        }),
       ],
       [
         "expired delegation",
-        buildDelegation({ allowedActions: ["policy:senders:delete"], resourceScope: [`mailbox:${owner}:senders:${targetSender}`], expiresAt: "2020-01-01T00:00:00.000Z" }),
+        buildDelegation({
+          allowedActions: ["policy:senders:delete"],
+          resourceScope: [`mailbox:${owner}:senders:${targetSender}`],
+          expiresAt: "2020-01-01T00:00:00.000Z",
+        }),
       ],
       [
         "revoked delegation",
-        buildDelegation({ allowedActions: ["policy:senders:delete"], resourceScope: [`mailbox:${owner}:senders:${targetSender}`], revoked: true }),
+        buildDelegation({
+          allowedActions: ["policy:senders:delete"],
+          resourceScope: [`mailbox:${owner}:senders:${targetSender}`],
+          revoked: true,
+        }),
       ],
-    ])("rejects invalid/unscoped delegation (%s) with forbidden error without mutating state", async (_label, delegationConfig) => {
-      const response = await deleteSenderRuleHandler({
-        request: deleteSenderRuleRequest(delegate, delegationConfig),
-        params: { owner, sender: targetSender },
-      });
+    ])(
+      "rejects invalid/unscoped delegation (%s) with forbidden error without mutating state",
+      async (_label, delegationConfig) => {
+        const response = await deleteSenderRuleHandler({
+          request: deleteSenderRuleRequest(delegate, delegationConfig),
+          params: { owner, sender: targetSender },
+        });
 
-      expect(response.status).toBe(403);
-      await expect(response.json()).resolves.toMatchObject({ error: { code: "forbidden" } });
-      await expect(repo.getSenderRule(owner, targetSender)).resolves.toBe("block");
-    });
+        expect(response.status).toBe(403);
+        await expect(response.json()).resolves.toMatchObject({ error: { code: "forbidden" } });
+        await expect(repo.getSenderRule(owner, targetSender)).resolves.toBe("block");
+      },
+    );
   });
 });

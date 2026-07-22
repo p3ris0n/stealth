@@ -44,4 +44,3 @@ export function requireActorMatches(
   const actor = requireActor(request);
   return assertActorAuthorized(actor, expectedAddress, authorization);
 }
-
