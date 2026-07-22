@@ -67,6 +67,24 @@ export const openApiDocument = {
           },
         },
       },
+      DomainError: {
+        type: "object",
+        required: ["code", "message"],
+        properties: {
+          code: {
+            type: "string",
+            description: "Stable domain error code.",
+            example: "bad_request",
+          },
+          message: {
+            type: "string",
+            description: "Human-readable explanation of the error.",
+          },
+          details: {
+            description: "Optional structured error details.",
+          },
+        },
+      },
       StellarAddress: {
         type: "string",
         pattern: "^G[A-Z2-7]{55}$",
