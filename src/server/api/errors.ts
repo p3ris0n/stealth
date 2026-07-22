@@ -117,6 +117,12 @@ export const API_ERROR_REGISTRY = {
     retryable: true,
     description: "A matching operation currently holds the idempotency lease.",
   },
+  retry_exhausted: {
+    status: 500,
+    message: "Operation failed after maximum retries",
+    retryable: false,
+    description: "A retryable operation was attempted the maximum number of times without success.",
+  },
 } as const satisfies Record<string, ApiErrorDefinition>;
 
 export type ApiErrorCode = keyof typeof API_ERROR_REGISTRY;
@@ -204,6 +210,16 @@ export class DataIntegrityError extends Error {
     this.name = "DataIntegrityError";
     this.recordType = recordType;
     this.correlationId = correlationId;
+  }
+}
+
+export class RetryExhaustedError extends ApiError {
+  readonly originalError: unknown;
+
+  constructor(originalError: unknown) {
+    super("retry_exhausted");
+    this.name = "RetryExhaustedError";
+    this.originalError = originalError;
   }
 }
 
