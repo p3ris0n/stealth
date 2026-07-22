@@ -11,6 +11,18 @@ function assertJsonContentType(request: Request) {
   }
 }
 
+function validateContentLength(request: Request, maxBytes: number): void {
+  const raw = request.headers.get("content-length");
+  if (raw === null) return;
+  const declaredLength = Number(raw);
+  if (!Number.isInteger(declaredLength) || declaredLength < 0) {
+    throw new ApiError(400, "bad_request", "Content-Length must be a non-negative integer");
+  }
+  if (declaredLength > maxBytes) {
+    throw new ApiError(413, "bad_request", `Request body exceeds ${maxBytes} bytes`);
+  }
+}
+
 export async function parseJsonBody<T>(
   request: Request,
   schema: ZodType<T>,
@@ -18,15 +30,9 @@ export async function parseJsonBody<T>(
 ): Promise<T> {
   assertJsonContentType(request);
 
-  const declaredLength = Number(request.headers.get("content-length") ?? 0);
-  if (declaredLength > maxBytes) {
-    throw new ApiError(413, "bad_request", `Request body exceeds ${maxBytes} bytes`);
-  }
+  validateContentLength(request, maxBytes);
 
   const body = await request.text();
-  if (!body.trim()) {
-    throw new ApiError(400, "bad_request", "Request body must not be empty");
-  }
   if (new TextEncoder().encode(body).byteLength > maxBytes) {
     throw new ApiError(413, "bad_request", `Request body exceeds ${maxBytes} bytes`);
   }
