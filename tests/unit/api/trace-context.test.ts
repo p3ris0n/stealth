@@ -6,6 +6,7 @@ import {
   serializeBaggage,
   traceContextStorage,
   traceRepository,
+  fetchRef,
   type TraceContext,
 } from "../../../src/server/api/context";
 import type { ApiRepository } from "../../../src/server/api/repository";
@@ -95,9 +96,9 @@ describe("Global Fetch Header Injection Integration", () => {
     };
 
     const spyFetch = vi.fn().mockResolvedValue(new Response());
-    const originalFetch = globalThis.fetch;
-    // Temporarily swap global fetch with spy to verify injection
-    globalThis.fetch = spyFetch;
+    const originalFetch = fetchRef.fetch;
+    // Temporarily swap underlying fetch with spy to verify injection
+    fetchRef.fetch = spyFetch;
 
     try {
       await traceContextStorage.run(fetchContext, async () => {
@@ -112,7 +113,7 @@ describe("Global Fetch Header Injection Integration", () => {
       expect(headers.get("tracestate")).toBe("rojo=1");
       expect(headers.get("baggage")).toBe(serializeBaggage(fetchContext.baggage!));
     } finally {
-      globalThis.fetch = originalFetch;
+      fetchRef.fetch = originalFetch;
     }
   });
 
@@ -126,8 +127,8 @@ describe("Global Fetch Header Injection Integration", () => {
     };
 
     const spyFetch = vi.fn().mockResolvedValue(new Response());
-    const originalFetch = globalThis.fetch;
-    globalThis.fetch = spyFetch;
+    const originalFetch = fetchRef.fetch;
+    fetchRef.fetch = spyFetch;
 
     try {
       await traceContextStorage.run(fetchContext, async () => {
@@ -144,14 +145,14 @@ describe("Global Fetch Header Injection Integration", () => {
       expect(headers.get("tracestate")).toBe("rojo=1");
       expect(headers.get("baggage")).toBe(serializeBaggage(fetchContext.baggage!));
     } finally {
-      globalThis.fetch = originalFetch;
+      fetchRef.fetch = originalFetch;
     }
   });
 
   it("does not inject trace headers if trace context is absent", async () => {
     const spyFetch = vi.fn().mockResolvedValue(new Response());
-    const originalFetch = globalThis.fetch;
-    globalThis.fetch = spyFetch;
+    const originalFetch = fetchRef.fetch;
+    fetchRef.fetch = spyFetch;
 
     try {
       await fetch("https://stellar.service/txn");
@@ -163,7 +164,7 @@ describe("Global Fetch Header Injection Integration", () => {
       expect(headers.has("tracestate")).toBe(false);
       expect(headers.has("baggage")).toBe(false);
     } finally {
-      globalThis.fetch = originalFetch;
+      fetchRef.fetch = originalFetch;
     }
   });
 });

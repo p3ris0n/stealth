@@ -33,13 +33,13 @@ export function parseTraceParent(
 ): { traceId: string; spanId: string; traceFlags: string } | null {
   if (!header) return null;
   const trimmed = header.trim();
-  if (trimmed.length < 55) return null;
+  if (trimmed.length !== 55) return null;
 
   const parts = trimmed.split("-");
-  if (parts.length < 4) return null;
+  if (parts.length !== 4) return null;
 
   const [version, traceId, parentId, traceFlags] = parts;
-  if (!/^[a-f0-9]{2}$/i.test(version)) return null;
+  if (version !== "00") return null;
   if (!/^[a-f0-9]{32}$/i.test(traceId) || traceId === "00000000000000000000000000000000")
     return null;
   if (!/^[a-f0-9]{16}$/i.test(parentId) || parentId === "0000000000000000") return null;
@@ -145,41 +145,43 @@ export function traceRepository(repo: ApiRepository, parentContext: TraceContext
 }
 
 const originalFetch = globalThis.fetch;
-if (originalFetch) {
-  globalThis.fetch = function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-    const context = traceContextStorage.getStore();
-    if (context) {
-      let headers: Headers;
-      if (input instanceof Request) {
-        headers = new Headers(input.headers);
-      } else {
-        headers = new Headers(init?.headers);
-      }
+export const fetchRef = {
+  fetch: originalFetch,
+};
 
-      if (!headers.has("traceparent")) {
-        headers.set("traceparent", serializeTraceParent(context));
-      }
-      if (context.tracestate && !headers.has("tracestate")) {
-        headers.set("tracestate", context.tracestate);
-      }
-      if (context.baggage && Object.keys(context.baggage).length > 0 && !headers.has("baggage")) {
-        headers.set("baggage", serializeBaggage(context.baggage));
-      }
-
-      if (input instanceof Request) {
-        const newRequest = new Request(input, { headers });
-        return originalFetch.call(this, newRequest, init);
-      } else {
-        const newInit: RequestInit = {
-          ...init,
-          headers,
-        };
-        return originalFetch.call(this, input, newInit);
-      }
+globalThis.fetch = function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const context = traceContextStorage.getStore();
+  if (context) {
+    let headers: Headers;
+    if (input instanceof Request) {
+      headers = new Headers(input.headers);
+    } else {
+      headers = new Headers(init?.headers);
     }
-    return originalFetch.call(this, input, init);
-  };
-}
+
+    if (!headers.has("traceparent")) {
+      headers.set("traceparent", serializeTraceParent(context));
+    }
+    if (context.tracestate && !headers.has("tracestate")) {
+      headers.set("tracestate", context.tracestate);
+    }
+    if (context.baggage && Object.keys(context.baggage).length > 0 && !headers.has("baggage")) {
+      headers.set("baggage", serializeBaggage(context.baggage));
+    }
+
+    if (input instanceof Request) {
+      const newRequest = new Request(input, { headers });
+      return fetchRef.fetch.call(this, newRequest, init);
+    } else {
+      const newInit: RequestInit = {
+        ...init,
+        headers,
+      };
+      return fetchRef.fetch.call(this, input, newInit);
+    }
+  }
+  return fetchRef.fetch.call(this, input, init);
+};
 
 // Register schemas once at module init for Issue #1508 record validation
 registerRecordSchema("mailboxPolicy", mailboxPolicySchema);
