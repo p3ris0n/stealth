@@ -13,6 +13,7 @@
 
 import { clearSecret, digestHex, sharedPool, toBase64, toHex } from "./memory";
 import { getCryptoTestVectors } from "./testing";
+import { createCommitment } from "./commitment";
 
 export interface EnvelopeAttachment {
   filename: string;
