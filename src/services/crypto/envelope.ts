@@ -60,6 +60,8 @@ export interface SealEnvelopeInput {
   }>;
   /** When aborted, all internal references are released and the promise rejects. */
   signal?: AbortSignal;
+  recipientKeyId?: string;
+  senderKeyId?: string;
 }
 
 const GCM_TAG_BYTES = 16;
@@ -222,6 +224,9 @@ export async function sealEnvelope(input: SealEnvelopeInput): Promise<SealedEnve
   // Encode the ciphertext — the binary buffer is no longer needed afterwards.
   const ciphertextBase64 = toBase64(ciphertext);
 
+  const nonceHex = toHex(iv);
+  const macHex = toHex(tag);
+
   // Release body ciphertext buffer now that both commitment and base64 are done.
   clearSecret(ciphertext);
   sharedPool.release(ivBuf);
@@ -233,8 +238,8 @@ export async function sealEnvelope(input: SealEnvelopeInput): Promise<SealedEnve
     timestamp: now ? now().toISOString() : new Date().toISOString(),
     encryption_metadata: {
       algorithm: "AES-256-GCM",
-      nonce: toHex(iv),
-      mac: toHex(tag),
+      nonce: nonceHex,
+      mac: macHex,
       ...(input.recipientKeyId ? { recipient_key_id: input.recipientKeyId } : {}),
       ...(input.senderKeyId ? { sender_key_id: input.senderKeyId } : {}),
     },
