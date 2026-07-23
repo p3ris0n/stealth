@@ -115,12 +115,14 @@ export function fromBase64(b64: string): Uint8Array {
 /**
  * SHA-256 hash of raw bytes, returned as a lowercase hex string.
  *
- * Unlike the previous per-module `sha256Hex` helpers, this does NOT re-wrap
- * an already-Uint8Array input in `new Uint8Array(data)` — the Web Crypto API
- * accepts Uint8Array directly as a BufferSource.
+ * Avoids redundant wrapping when the input is already an ArrayBuffer-backed
+ * Uint8Array. A copy is made only when the backing buffer is not an
+ * ArrayBuffer (e.g. SharedArrayBuffer) to satisfy the Web Crypto type.
  */
 export async function digestHex(data: Uint8Array): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", data);
+  const source: Uint8Array<ArrayBuffer> =
+    data.buffer instanceof ArrayBuffer ? (data as Uint8Array<ArrayBuffer>) : new Uint8Array(data);
+  const digest = await crypto.subtle.digest("SHA-256", source);
   return toHex(new Uint8Array(digest));
 }
 
