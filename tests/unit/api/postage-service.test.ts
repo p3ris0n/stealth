@@ -136,7 +136,7 @@ describe("postage service", () => {
 
       await expect(
         submitPostage(
-          repository,
+          createApiContext(repository),
           {
             amount: "125",
             messageId: "i".repeat(64),
