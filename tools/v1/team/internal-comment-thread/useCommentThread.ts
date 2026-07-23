@@ -1,6 +1,6 @@
-import { useState, useCallback, useEffect } from 'react';
-import { commentThreadService } from './service';
-import { ThreadWithComments, Thread } from './types';
+import { useState, useCallback, useEffect } from "react";
+import { commentThreadService } from "./service";
+import { ThreadWithComments, Thread } from "./types";
 
 export function useCommentThread(targetId: string, targetType: string) {
   const [threads, setThreads] = useState<ThreadWithComments[]>([]);
@@ -27,8 +27,13 @@ export function useCommentThread(targetId: string, targetType: string) {
   const addThread = async (initialComment: string, authorId: string) => {
     try {
       setError(null);
-      const newThread = await commentThreadService.createThread(targetId, targetType, initialComment, authorId);
-      setThreads(prev => [...prev, newThread]);
+      const newThread = await commentThreadService.createThread(
+        targetId,
+        targetType,
+        initialComment,
+        authorId,
+      );
+      setThreads((prev) => [...prev, newThread]);
       return newThread;
     } catch (err: unknown) {
       const errorObj = err instanceof Error ? err : new Error(String(err));
@@ -41,12 +46,18 @@ export function useCommentThread(targetId: string, targetType: string) {
     try {
       setError(null);
       const newComment = await commentThreadService.addComment(threadId, authorId, content);
-      setThreads(prev => prev.map(t => {
-        if (t.id === threadId) {
-          return { ...t, comments: [...t.comments, newComment], updatedAt: new Date().toISOString() };
-        }
-        return t;
-      }));
+      setThreads((prev) =>
+        prev.map((t) => {
+          if (t.id === threadId) {
+            return {
+              ...t,
+              comments: [...t.comments, newComment],
+              updatedAt: new Date().toISOString(),
+            };
+          }
+          return t;
+        }),
+      );
       return newComment;
     } catch (err: unknown) {
       const errorObj = err instanceof Error ? err : new Error(String(err));
@@ -55,15 +66,19 @@ export function useCommentThread(targetId: string, targetType: string) {
     }
   };
 
-  const updateStatus = async (threadId: string, status: Thread['status']) => {
-      try {
-        await commentThreadService.updateThreadStatus(threadId, status);
-        setThreads(prev => prev.map(t => t.id === threadId ? { ...t, status, updatedAt: new Date().toISOString() } : t));
-      } catch (err: unknown) {
-        const errorObj = err instanceof Error ? err : new Error(String(err));
-        setError(errorObj);
-        throw errorObj;
-      }
+  const updateStatus = async (threadId: string, status: Thread["status"]) => {
+    try {
+      await commentThreadService.updateThreadStatus(threadId, status);
+      setThreads((prev) =>
+        prev.map((t) =>
+          t.id === threadId ? { ...t, status, updatedAt: new Date().toISOString() } : t,
+        ),
+      );
+    } catch (err: unknown) {
+      const errorObj = err instanceof Error ? err : new Error(String(err));
+      setError(errorObj);
+      throw errorObj;
+    }
   };
 
   return {

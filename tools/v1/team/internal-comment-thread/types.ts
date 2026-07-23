@@ -2,7 +2,7 @@ export interface User {
   id: string;
   name: string;
   avatarUrl?: string;
-  role: 'admin' | 'member' | 'guest';
+  role: "admin" | "member" | "guest";
 }
 
 export interface Comment {
@@ -19,7 +19,7 @@ export interface Thread {
   id: string;
   targetId: string;
   targetType: string;
-  status: 'open' | 'resolved' | 'archived';
+  status: "open" | "resolved" | "archived";
   createdAt: string;
   updatedAt: string;
 }
