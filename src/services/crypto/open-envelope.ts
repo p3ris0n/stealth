@@ -202,9 +202,12 @@ export async function openEnvelope(
     }
 
     // 4) Resolve recipient key and decrypt (fail closed on any mismatch).
+    const recipientKeyId = typeof meta.recipient_key_id === "string" ? meta.recipient_key_id : undefined;
+    const senderKeyId = typeof meta.sender_key_id === "string" ? meta.sender_key_id : undefined;
+
     let key: CryptoKey;
     try {
-      key = await keys.resolveKey(recipient);
+      key = await keys.resolveKey(recipient, recipientKeyId);
     } catch {
       throw new OpenEnvelopeError("recipient key unavailable", "crypto_decryption_error");
     }
@@ -246,7 +249,15 @@ export async function openEnvelope(
         }))
       : [];
 
-    return { sender, recipient, timestamp, body, attachments };
+    return {
+      sender,
+      recipient,
+      timestamp,
+      body,
+      attachments,
+      recipientKeyId,
+      senderKeyId,
+    };
   } catch (error: unknown) {
     result = mapOpenEnvelopeError(error);
     throw error;

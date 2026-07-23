@@ -222,7 +222,7 @@ export async function sealEnvelope(input: SealEnvelopeInput): Promise<SealedEnve
 
     // Compute the content commitment BEFORE base64-encoding so the binary
     // ciphertext can be released immediately after.
-    const contentCommitment = await digestHex(ciphertext);
+    const contentCommitment = await createCommitment(ciphertext);
 
     // Encode the ciphertext — the binary buffer is no longer needed afterwards.
     const ciphertextBase64 = toBase64(ciphertext);
