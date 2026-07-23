@@ -240,15 +240,16 @@ describe("Email Tone Rewriter guards", () => {
       bodyText: "A short body.",
       tone: "formal",
     };
-    expect(checkRequestLimits({ ...base, subject: "x".repeat(GUARD_LIMITS.maxSubjectChars + 1) })?.code).toBe(
-      "input-too-large",
-    );
-    expect(checkRequestLimits({ ...base, bodyText: "x".repeat(GUARD_LIMITS.maxBodyChars + 1) })?.code).toBe(
-      "input-too-large",
-    );
-    expect(checkRequestLimits({ ...base, bodyText: "word ".repeat(GUARD_LIMITS.maxBodyWords + 1) })?.code).toBe(
-      "input-too-large",
-    );
+    expect(
+      checkRequestLimits({ ...base, subject: "x".repeat(GUARD_LIMITS.maxSubjectChars + 1) })?.code,
+    ).toBe("input-too-large");
+    expect(
+      checkRequestLimits({ ...base, bodyText: "x".repeat(GUARD_LIMITS.maxBodyChars + 1) })?.code,
+    ).toBe("input-too-large");
+    expect(
+      checkRequestLimits({ ...base, bodyText: "word ".repeat(GUARD_LIMITS.maxBodyWords + 1) })
+        ?.code,
+    ).toBe("input-too-large");
     expect(checkRequestLimits({ ...base, maxWords: 0 })?.code).toBe("invalid-length-constraint");
     expect(checkRequestLimits({ ...base, maxWords: -5 })?.code).toBe("invalid-length-constraint");
     expect(checkRequestLimits({ ...base, maxWords: 3.5 })?.code).toBe("invalid-length-constraint");
