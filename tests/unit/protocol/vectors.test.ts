@@ -22,6 +22,7 @@ import {
   setSenderRule,
 } from "../../../src/server/api/policy-service";
 import { submitPostage, resolvePostage } from "../../../src/server/api/postage-service";
+import { createApiContext } from "../../../src/server/api/context";
 import { createDeliveryReceipt, markReceiptRead } from "../../../src/server/api/receipt-service";
 import { ApiError } from "../../../src/server/api/errors";
 import type { MailboxPolicy, SenderRule } from "../../../src/server/api/domain";
@@ -165,11 +166,11 @@ describe("postage_states", () => {
       for (const op of c.operations) {
         try {
           if (op === "submit") {
-            lastResult = await submitPostage(repo, postageInput, submitAt);
+            lastResult = await submitPostage(createApiContext(repo), postageInput, submitAt);
           } else if (op === "settle") {
-            lastResult = await resolvePostage(repo, f.messageId, "settled");
+            lastResult = await resolvePostage(createApiContext(repo), f.messageId, "settled");
           } else if (op === "refund") {
-            lastResult = await resolvePostage(repo, f.messageId, "refunded");
+            lastResult = await resolvePostage(createApiContext(repo), f.messageId, "refunded");
           }
         } catch (err) {
           caughtError = err;
