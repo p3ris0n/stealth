@@ -12,6 +12,8 @@ import {
 import { getMailboxPolicy } from "./policy-service";
 import * as metrics from "./metrics";
 import type { ApiRepository } from "./repository";
+import { recordAuditEvent } from "./audit";
+import type { ApiContext } from "./context";
 
 export type SubmitPostageContext = {
   actorId?: string;
@@ -79,147 +81,202 @@ export function signQuote(
 }
 
 export async function quotePostage(
-  repository: ApiRepository,
+  context: ApiContext,
   input: { recipient: string; sender: string },
 ) {
-  const rule = await repository.getSenderRule(input.recipient, input.sender);
-  const { policy } = await getMailboxPolicy(repository, input.recipient);
+  try {
+    const rule = await context.repository.getSenderRule(input.recipient, input.sender);
+    const { policy } = await getMailboxPolicy(context.repository, input.recipient);
 
-  const issuedAt = new Date().toISOString();
-  const lifetimeMs = process.env.STEALTH_QUOTE_LIFETIME_MS
-    ? parseInt(process.env.STEALTH_QUOTE_LIFETIME_MS, 10)
-    : 15 * 60 * 1000;
-  const expiresAt = new Date(Date.now() + lifetimeMs).toISOString();
+    const issuedAt = new Date().toISOString();
+    const lifetimeMs = process.env.STEALTH_QUOTE_LIFETIME_MS
+      ? parseInt(process.env.STEALTH_QUOTE_LIFETIME_MS, 10)
+      : 15 * 60 * 1000;
+    const expiresAt = new Date(Date.now() + lifetimeMs).toISOString();
 
-  if (rule === "block") {
-    const amount = policy.minimumPostage;
-    return {
+    if (rule === "block") {
+      const amount = policy.minimumPostage;
+      const result = {
+        amount,
+        eligible: false,
+        reason: "sender_blocked" as const,
+        trusted: false,
+        issuedAt,
+        expiresAt,
+        digest: signQuote(input.recipient, input.sender, amount, issuedAt, expiresAt),
+      };
+      
+      recordAuditEvent({
+        actor: input.sender,
+        action: "postage.quote",
+        targetType: "mailbox",
+        safeTargetReference: input.recipient,
+        result: "success",
+        requestId: context.requestId ?? "unknown",
+      });
+      return result;
+    }
+
+    const trusted = rule === "allow";
+    const amount = trusted ? "0" : policy.minimumPostage;
+
+    const result = {
       amount,
-      eligible: false,
-      reason: "sender_blocked" as const,
-      trusted: false,
+      eligible: true,
+      reason: trusted ? ("trusted_sender" as const) : ("mailbox_minimum" as const),
+      trusted,
       issuedAt,
       expiresAt,
       digest: signQuote(input.recipient, input.sender, amount, issuedAt, expiresAt),
     };
+
+    recordAuditEvent({
+      actor: input.sender,
+      action: "postage.quote",
+      targetType: "mailbox",
+      safeTargetReference: input.recipient,
+      result: "success",
+      requestId: context.requestId ?? "unknown",
+    });
+    return result;
+  } catch (error) {
+    recordAuditEvent({
+      actor: input.sender,
+      action: "postage.quote",
+      targetType: "mailbox",
+      safeTargetReference: input.recipient,
+      result: "denied",
+      requestId: context.requestId ?? "unknown",
+    });
+    throw error;
   }
-
-  const trusted = rule === "allow";
-  const amount = trusted ? "0" : policy.minimumPostage;
-
-  return {
-    amount,
-    eligible: true,
-    reason: trusted ? ("trusted_sender" as const) : ("mailbox_minimum" as const),
-    trusted,
-    issuedAt,
-    expiresAt,
-    digest: signQuote(input.recipient, input.sender, amount, issuedAt, expiresAt),
-  };
 }
 
 export async function submitPostage(
-  repository: ApiRepository,
+  context: ApiContext,
   input: Omit<Postage, "createdAt" | "status">,
   now = new Date(),
-  context: SubmitPostageContext = {},
+  submitContext: SubmitPostageContext = {},
 ) {
-  const actorId = context.actorId ?? "unknown";
+  try {
+    const actorId = submitContext.actorId ?? "unknown";
 
-  const accountLimit = await checkAccountLimit(repository, input.sender);
-  if (!accountLimit.allowed) {
-    rejectLimitedPostage(
-      accountLimit,
-      {
-        actorId,
-        limit: "account",
-      },
-      "Account limit exceeded",
+    const accountLimit = await checkAccountLimit(context.repository, input.sender);
+    if (!accountLimit.allowed) {
+      rejectLimitedPostage(
+        accountLimit,
+        {
+          actorId,
+          limit: "account",
+        },
+        "Account limit exceeded",
+      );
+    }
+
+    const ip = submitContext.ip ?? "unknown";
+    const ipLimit = await checkIpLimit(context.repository, ip);
+    if (!ipLimit.allowed) {
+      rejectLimitedPostage(
+        ipLimit,
+        {
+          ip,
+          limit: "ip",
+        },
+        "IP limit exceeded",
+      );
+    }
+
+    const fingerprint = submitContext.fingerprint ?? "";
+    const deviceLimit = await checkDeviceLimit(context.repository, fingerprint);
+    if (!deviceLimit.allowed) {
+      rejectLimitedPostage(
+        deviceLimit,
+        {
+          fingerprint: fingerprint || "unknown",
+          limit: "device",
+        },
+        "Device limit exceeded",
+      );
+    }
+
+    const senderRecipientLimit = await checkSenderRecipientLimit(
+      context.repository,
+      input.sender,
+      input.recipient,
     );
-  }
 
-  const ip = context.ip ?? "unknown";
-  const ipLimit = await checkIpLimit(repository, ip);
-  if (!ipLimit.allowed) {
-    rejectLimitedPostage(
-      ipLimit,
-      {
-        ip,
-        limit: "ip",
-      },
-      "IP limit exceeded",
-    );
-  }
+    if (!senderRecipientLimit.allowed) {
+      const sender = submitContext.sender ?? input.sender;
 
-  const fingerprint = context.fingerprint ?? "";
-  const deviceLimit = await checkDeviceLimit(repository, fingerprint);
-  if (!deviceLimit.allowed) {
-    rejectLimitedPostage(
-      deviceLimit,
-      {
-        fingerprint: fingerprint || "unknown",
-        limit: "device",
-      },
-      "Device limit exceeded",
-    );
-  }
+      rejectLimitedPostage(
+        senderRecipientLimit,
+        {
+          limit: "sender_recipient",
+          sender,
+        },
+        "Sender-recipient limit exceeded",
+      );
+    }
 
-  const senderRecipientLimit = await checkSenderRecipientLimit(
-    repository,
-    input.sender,
-    input.recipient,
-  );
+    const relayId = submitContext.relayId?.trim() || "unknown";
+    const relayLimit = await checkRelayLimit(context.repository, relayId);
 
-  if (!senderRecipientLimit.allowed) {
-    const sender = context.sender ?? input.sender;
+    if (!relayLimit.allowed) {
+      rejectLimitedPostage(
+        relayLimit,
+        {
+          limit: "relay",
+          relayId,
+        },
+        "Relay limit exceeded",
+      );
+    }
 
-    rejectLimitedPostage(
-      senderRecipientLimit,
-      {
-        limit: "sender_recipient",
-        sender,
-      },
-      "Sender-recipient limit exceeded",
-    );
-  }
+    if (await context.repository.getPostage(input.messageId)) {
+      throw new ApiError(409, "conflict", "Postage already exists for this message");
+    }
 
-  const relayId = context.relayId?.trim() || "unknown";
-  const relayLimit = await checkRelayLimit(repository, relayId);
+    const rule = await context.repository.getSenderRule(input.recipient, input.sender);
 
-  if (!relayLimit.allowed) {
-    rejectLimitedPostage(
-      relayLimit,
-      {
-        limit: "relay",
-        relayId,
-      },
-      "Relay limit exceeded",
-    );
-  }
+    if (rule === "block") {
+      throw new ApiError(403, "forbidden", "The recipient has blocked this sender");
+    }
 
-  if (await repository.getPostage(input.messageId)) {
-    throw new ApiError(409, "conflict", "Postage already exists for this message");
-  }
+    const { policy } = await getMailboxPolicy(context.repository, input.recipient);
 
-  const rule = await repository.getSenderRule(input.recipient, input.sender);
+    if (BigInt(input.amount) < BigInt(policy.minimumPostage)) {
+      throw new ApiError(422, "validation_error", "Postage is below the mailbox minimum", {
+        minimumPostage: policy.minimumPostage,
+      });
+    }
 
-  if (rule === "block") {
-    throw new ApiError(403, "forbidden", "The recipient has blocked this sender");
-  }
-
-  const { policy } = await getMailboxPolicy(repository, input.recipient);
-
-  if (BigInt(input.amount) < BigInt(policy.minimumPostage)) {
-    throw new ApiError(422, "validation_error", "Postage is below the mailbox minimum", {
-      minimumPostage: policy.minimumPostage,
+    const result = await context.repository.setPostage({
+      ...input,
+      createdAt: now.toISOString(),
+      status: "pending",
     });
-  }
 
-  return repository.setPostage({
-    ...input,
-    createdAt: now.toISOString(),
-    status: "pending",
-  });
+    recordAuditEvent({
+      actor: input.sender,
+      action: "postage.submit",
+      targetType: "message",
+      safeTargetReference: input.messageId,
+      result: "success",
+      requestId: context.requestId ?? "unknown",
+    });
+
+    return result;
+  } catch (error) {
+    recordAuditEvent({
+      actor: input.sender,
+      action: "postage.submit",
+      targetType: "message",
+      safeTargetReference: input.messageId,
+      result: "denied",
+      requestId: context.requestId ?? "unknown",
+    });
+    throw error;
+  }
 }
 
 export async function getPostage(repository: ApiRepository, messageId: string) {
@@ -239,40 +296,62 @@ export function assertPostageParticipant(postage: Postage, actor: string) {
 }
 
 export async function resolvePostage(
-  repository: ApiRepository,
+  context: ApiContext,
   messageId: string,
   status: "refunded" | "settled",
 ) {
-  // Use an atomic compare-and-swap instead of get-then-set: two concurrent
-  // settle/refund requests for the same message must not both succeed, and
-  // every loser must observe the same deterministic terminal state rather
-  // than racing to overwrite each other.
-  const result = await repository.transitionPostage(messageId, "pending", status);
+  const actor = context.principal?.address ?? "system";
+  try {
+    // Use an atomic compare-and-swap instead of get-then-set: two concurrent
+    // settle/refund requests for the same message must not both succeed, and
+    // every loser must observe the same deterministic terminal state rather
+    // than racing to overwrite each other.
+    const result = await context.repository.transitionPostage(messageId, "pending", status);
 
-  if (result.outcome === "not-found") {
-    throw new ApiError(404, "not_found", "Postage was not found");
-  }
+    if (result.outcome === "not-found") {
+      throw new ApiError(404, "not_found", "Postage was not found");
+    }
 
-  if (result.outcome === "conflict") {
-    const { postage } = result;
+    if (result.outcome === "conflict") {
+      const { postage } = result;
 
-    // Provide detailed explanations for terminal states to aid debugging and retry logic
-    const explanations: Record<string, string> = {
-      settled:
-        "Postage has already been settled. The escrow was previously released to the recipient.",
-      refunded:
-        "Postage has already been refunded. The escrow was previously returned to the sender.",
-    };
+      // Provide detailed explanations for terminal states to aid debugging and retry logic
+      const explanations: Record<string, string> = {
+        settled:
+          "Postage has already been settled. The escrow was previously released to the recipient.",
+        refunded:
+          "Postage has already been refunded. The escrow was previously returned to the sender.",
+      };
 
-    const explanation =
-      explanations[postage.status] || `Postage is in terminal state: ${postage.status}`;
+      const explanation =
+        explanations[postage.status] || `Postage is in terminal state: ${postage.status}`;
 
-    throw new ApiError(409, "conflict", explanation, {
-      currentStatus: postage.status,
-      attemptedStatus: status,
-      messageId,
+      throw new ApiError(409, "conflict", explanation, {
+        currentStatus: postage.status,
+        attemptedStatus: status,
+        messageId,
+      });
+    }
+
+    recordAuditEvent({
+      actor,
+      action: `postage.${status}`,
+      targetType: "message",
+      safeTargetReference: messageId,
+      result: "success",
+      requestId: context.requestId ?? "unknown",
     });
-  }
 
-  return result.postage;
+    return result.postage;
+  } catch (error) {
+    recordAuditEvent({
+      actor,
+      action: `postage.${status}`,
+      targetType: "message",
+      safeTargetReference: messageId,
+      result: "denied",
+      requestId: context.requestId ?? "unknown",
+    });
+    throw error;
+  }
 }

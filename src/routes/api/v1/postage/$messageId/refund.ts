@@ -19,7 +19,7 @@ export const Route = createFileRoute("/api/v1/postage/$messageId/refund")({
           const messageId = hash32Schema.parse(params.messageId);
           const current = await getPostage(repository, messageId);
           requireActorMatches(context, current.recipient);
-          const postage = await resolvePostage(repository, messageId, "refunded");
+          const postage = await resolvePostage(context, messageId, "refunded");
           return apiSuccess(request, postage);
         }),
     },

@@ -90,7 +90,7 @@ export const Route = createFileRoute("/api/v1/postage/")({
             relayId,
             sender: input.sender,
           };
-          const postage = await submitPostage(repo, postageInput, new Date(), submitContext);
+          const postage = await submitPostage(apiContext, postageInput, new Date(), submitContext);
 
           if (rawIdempotencyKey) {
             await recordIdempotency(repo, input.sender, rawIdempotencyKey, 201, postage);
