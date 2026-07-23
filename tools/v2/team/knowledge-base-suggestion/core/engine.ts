@@ -10,12 +10,62 @@ import type {
   KbSuggestion,
   SuggestInput,
   KbMatchReason,
+  SuggestionConfig,
+  KbServiceConfig,
 } from "../types";
+import { RankingStrategy, DEFAULT_SUGGESTION_CONFIG } from "../types";
+import { scoreArticle, computeScores, normalizeScore } from "./scoring";
+import {
+  rankArticles,
+  applyRankingStrategy,
+  type ScoredResult,
+} from "./ranking";
+import { filterCorpus } from "./filters";
+import { validateInput } from "./validation";
+import { SuggestionCache } from "./cache";
+import { AnalyticsCollector } from "./analytics";
 
 /** Explicit, machine-readable error codes for contract operations. */
 export enum KbErrorCode {
   InvalidInput = "INVALID_INPUT",
   NoMatch = "NO_MATCH",
+  CorpusTooLarge = "CORPUS_TOO_LARGE",
+  OperationNotSupported = "OPERATION_NOT_SUPPORTED",
+  ServiceUnavailable = "SERVICE_UNAVAILABLE",
+}
+
+/** A filter function applied to the corpus. */
+export interface KbCorpusFilter {
+  name: string;
+  (article: KbArticle): boolean;
+}
+
+/** Result of corpus filtering with warnings. */
+export interface KbCorpusFilterResult {
+  filtered: KbArticle[];
+  warnings: string[];
+  appliedFilters: string[];
+}
+
+/** Discriminated outcome returned by every operation. */
+export type KbResult<T> =
+  | { ok: true; value: T }
+  | { ok: false; error: KbErrorCode; message: string };
+
+/** Operations supported by the contract. */
+export type KbOperation = { operation: "suggest"; input: SuggestInput };
+
+/** Output produced by the contract. */
+export type KbContractOutput = {
+  operation: "suggest";
+  suggestions: KbSuggestion[];
+  warnings?: string[];
+  reasons?: KbMatchReason[][];
+};
+
+/** Backend-facing entry point for KB suggestions. */
+export interface KbContract {
+  execute(input: KbOperation, corpus: KbArticle[], filters?: KbCorpusFilter[]): KbResult<KbContractOutput>;
 }
 
 /** Typed success outcome. */
@@ -33,6 +83,7 @@ export function fail<T = never>(
 
 /** Tokenize a query into lowercase alphanumeric terms. */
 export function tokenize(text: string): string[] {
+  if (!text || typeof text !== "string") return [];
   return text
     .toLowerCase()
     .split(/[^a-z0-9]+/i)
@@ -41,186 +92,112 @@ export function tokenize(text: string): string[] {
 
 /** Normalize text for comparison (lowercase, trimmed). */
 export function normalizeText(text: string): string {
+  if (!text || typeof text !== "string") return "";
   return text.toLowerCase().trim();
 }
 
 /**
- * Build match reasons for an article given query tokens.
- * Expandable: contributors can add new reason types in KbMatchReason.
+ * Compute a simple hash for a corpus for cache invalidation.
  */
-export function scoreArticle(
-  article: KbArticle,
-  queryTokens: string[],
-  limit = 5
-): { suggestion: KbSuggestion; reasons: KbMatchReason[] } | null {
-  let score = 0;
-  const reasons: KbMatchReason[] = [];
-  const titleLower = normalizeText(article.title);
-
-  for (const term of queryTokens) {
-    // Tag overlap scoring (+2 per matched tag)
-    const matchedTag = article.tags.find((t) => normalizeText(t) === term);
-    if (matchedTag) {
-      score += 2;
-      reasons.push({
-        type: "tag-match",
-        token: term,
-        matchedValue: matchedTag,
-      });
+export function hashCorpus(corpus: KbArticle[]): string {
+  if (!Array.isArray(corpus)) return "";
+  let hash = 0;
+  for (const article of corpus) {
+    for (let i = 0; i < article.id.length; i++) {
+      const char = article.id.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
     }
-
-    // Title keyword scoring (+1 per query token found in title)
-    if (titleLower.includes(term)) {
-      score += 1;
-      reasons.push({
-        type: "title-keyword",
-        token: term,
-        matchedValue: article.title,
-      });
+    if (article.revision) {
+      for (let i = 0; i < article.revision.length; i++) {
+        const char = article.revision.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+      }
     }
   }
-
-  if (score > 0) {
-    return {
-      suggestion: {
-        articleId: article.id,
-        title: article.title,
-        summary: article.summary,
-        score,
-      },
-      reasons,
-    };
-  }
-  return null;
+  return hash.toString(16);
 }
 
 /**
- * Rank articles deterministically by score desc, then title asc for tie-breaking.
- * Expandable: add secondary sort criteria here.
+ * Compute a simple hash for a query string for cache lookup.
  */
-export function rankArticles(
-  scored: { suggestion: KbSuggestion; reasons: KbMatchReason[] }[],
-  limit = 5
-): KbSuggestion[] {
-  return scored
-    .sort((a, b) => b.suggestion.score - a.suggestion.score || a.suggestion.title.localeCompare(b.suggestion.title))
-    .slice(0, limit)
-    .map((s) => s.suggestion);
-}
-
-/**
- * Filter corpus using optional contributor-provided filter functions.
- * Expandable: add new filter criteria without touching core logic.
- */
-export function filterCorpus(
-  corpus: KbArticle[],
-  filters: KbCorpusFilter[] = []
-): KbCorpusFilterResult {
-  if (!Array.isArray(corpus)) {
-    return {
-      filtered: [],
-      warnings: ["corpus must be an array"],
-      appliedFilters: [],
-    };
-  }
-
-  let working = [...corpus];
-  const warnings: string[] = [];
-  const appliedFilters: string[] = [];
-
-  for (const filter of filters) {
-    const before = working.length;
-    working = working.filter(filter);
-    const removed = before - working.length;
-    if (removed > 0) {
-      warnings.push(`Filter '${filter.name}' removed ${removed} articles`);
-    }
-    appliedFilters.push(filter.name);
-  }
-
-  return {
-    filtered: working,
-    warnings,
-    appliedFilters,
-  };
-}
-
-/**
- * Validate inputs before processing. Expandable with new validation rules.
- */
-export function validateInput(input: SuggestInput, corpus: KbArticle[]): string | null {
-  if (!Array.isArray(corpus)) return "corpus must be an array";
-  if (!input || typeof input.query !== "string" || input.query.trim().length === 0) {
-    return "query is required";
-  }
-  return null;
+export function hashQuery(query: string): string {
+  const tokens = tokenize(query);
+  return tokens.sort().join(",");
 }
 
 /**
  * Pure suggestion reducer. Deterministic given the same inputs.
- * Orchestrates filter -> score -> rank pipeline.
+ * Orchestrates the full pipeline: filter -> score -> rank.
  */
 export function suggestKb(
   query: string,
   corpus: KbArticle[],
-  limit = 5,
-  filters: KbCorpusFilter[] = []
-): { suggestions: KbSuggestion[]; warnings: string[] } {
+  limit?: number,
+  filters: KbCorpusFilter[] = [],
+  config?: Partial<SuggestionConfig>,
+): { suggestions: KbSuggestion[]; warnings: string[]; reasons?: KbMatchReason[][] } {
+  const mergedConfig: SuggestionConfig = { ...DEFAULT_SUGGESTION_CONFIG, ...config };
+  const effectiveLimit = limit ?? mergedConfig.defaultLimit ?? 5;
+  const clampedLimit = Math.min(effectiveLimit, mergedConfig.maxLimit ?? 50);
+
   const terms = tokenize(query);
   if (terms.length === 0) {
-    return { suggestions: [], warnings: ["query produced no tokens"] };
+    return {
+      suggestions: [],
+      warnings: ["query produced no tokens; empty or invalid query"],
+    };
   }
 
-  // 1. Filter corpus
   const filterResult = filterCorpus(corpus, filters);
   const workingCorpus = filterResult.filtered;
 
-  // 2. Score each article
+  if (workingCorpus.length === 0) {
+    return {
+      suggestions: [],
+      warnings: [...filterResult.warnings, "no articles remain after filtering"],
+    };
+  }
+
   const scored = workingCorpus
-    .map((article) => scoreArticle(article, terms, limit))
+    .map((article) => scoreArticle(article, terms, mergedConfig))
     .filter((result): result is NonNullable<typeof result> => result !== null);
 
-  // 3. Rank and limit
-  const suggestions = rankArticles(scored, limit);
+  if (scored.length === 0) {
+    return {
+      suggestions: [],
+      warnings: [...filterResult.warnings, "no articles matched the query"],
+    };
+  }
+
+  const ranked = mergedConfig.strategy && mergedConfig.strategy !== RankingStrategy.Default
+    ? applyRankingStrategy(scored, mergedConfig)
+    : rankArticles(scored, clampedLimit);
+
+  const maxScore = ranked.length > 0 ? Math.max(...ranked.map((s) => s.suggestion.score)) : 1;
+  const suggestions = ranked.map((s) => ({
+    ...s.suggestion,
+    confidence: normalizeScore(s.suggestion.score, maxScore, 0),
+  }));
+
+  const reasons = mergedConfig.includeReasons
+    ? scored
+        .filter((s) => suggestions.some((r) => r.articleId === s.suggestion.articleId))
+        .map((s) => s.reasons)
+    : undefined;
 
   return {
     suggestions,
     warnings: filterResult.warnings,
+    reasons,
   };
 }
 
-// Contract types
-
-/** Discriminated outcome returned by every operation. */
-export type KbResult<T> =
-  | { ok: true; value: T }
-  | { ok: false; error: KbErrorCode; message: string };
-
-/** Operations supported by the contract. */
-export type KbOperation = { operation: "suggest"; input: SuggestInput };
-
-/** A filter function applied to the corpus. */
-export type KbCorpusFilter = {
-  name: string;
-  (article: KbArticle): boolean;
-};
-
-/** Result of corpus filtering with warnings. */
-export type KbCorpusFilterResult = {
-  filtered: KbArticle[];
-  warnings: string[];
-  appliedFilters: string[];
-};
-
-/** Output produced by the contract. */
-export type KbContractOutput = {
-  operation: "suggest";
-  suggestions: KbSuggestion[];
-  /** Warnings from the suggestion pipeline. */
-  warnings?: string[];
-};
-
-/** Backend-facing entry point for KB suggestions. */
-export interface KbContract {
-  execute(input: KbOperation, corpus: KbArticle[], filters?: KbCorpusFilter[]): KbResult<KbContractOutput>;
-}
+// Re-export modules
+export { scoreArticle, computeScores, normalizeScore } from "./scoring";
+export { rankArticles, applyRankingStrategy } from "./ranking";
+export { filterCorpus } from "./filters";
+export { validateInput } from "./validation";
+export { SuggestionCache } from "./cache";
+export { AnalyticsCollector } from "./analytics";
