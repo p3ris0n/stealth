@@ -89,3 +89,13 @@ The UI is isolated and is not connected to the main application.
 Keyboard navigation, accessible labels, focus indicators, and screen reader support are included.
 
 Future integration into the mail application should be completed in a dedicated integration issue.
+
+## Additional Documentation
+
+The following documents are provided for reviewers:
+
+- docs/ACCESSIBILITY.md
+- docs/VISUAL_STYLE.md
+- docs/TEST_PLAN.md
+- docs/REVIEW_NOTES.md
+- docs/SECURITY_AND_PERFORMANCE.md
