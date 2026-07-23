@@ -1,5 +1,11 @@
-export type PayoutStatus = 'PENDING' | 'VALIDATING' | 'APPROVED' | 'REJECTED' | 'COMPLETED' | 'ERROR';
-export type Currency = 'XLM' | 'USDC';
+export type PayoutStatus =
+  | "PENDING"
+  | "VALIDATING"
+  | "APPROVED"
+  | "REJECTED"
+  | "COMPLETED"
+  | "ERROR";
+export type Currency = "XLM" | "USDC";
 
 export interface PayoutRequest {
   id: string;
@@ -25,7 +31,7 @@ export interface TeamMemberQuota {
 }
 
 export interface PayoutState {
-  status: 'idle' | 'loading' | 'success' | 'error';
+  status: "idle" | "loading" | "success" | "error";
   request: PayoutRequest | null;
   validationErrors?: Record<string, string>;
   globalError?: string;

@@ -1,5 +1,5 @@
-import { PayoutRequest, Currency, ValidationResult, TeamMemberQuota } from '../types/payout';
-import { MOCK_TEAM_MEMBERS } from '../fixtures/payout.fixtures';
+import { PayoutRequest, Currency, ValidationResult, TeamMemberQuota } from "../types/payout";
+import { MOCK_TEAM_MEMBERS } from "../fixtures/payout.fixtures";
 
 export function validateStellarAddress(address: string): boolean {
   if (!address) return false;
@@ -11,7 +11,7 @@ export function validateStellarAddress(address: string): boolean {
 export function validatePayoutAmount(
   amount: number,
   currency: Currency,
-  quota: TeamMemberQuota
+  quota: TeamMemberQuota,
 ): ValidationResult {
   const errors: Record<string, string> = {};
 
@@ -20,7 +20,7 @@ export function validatePayoutAmount(
   }
 
   if (amount <= 0) {
-    errors.amount = 'Amount must be greater than zero.';
+    errors.amount = "Amount must be greater than zero.";
   } else if (amount > quota.maxAmountPerPayout[currency]) {
     errors.amount = `Amount exceeds allowed quota of ${quota.maxAmountPerPayout[currency]} ${currency}.`;
   }
@@ -32,8 +32,8 @@ export function validatePayoutAmount(
 }
 
 export function estimateNetworkFee(currency: Currency): number {
-  if (currency === 'XLM') return 0.00001; // Base fee in XLM
-  if (currency === 'USDC') return 0.00001; // Fee is still paid in XLM, but represented roughly here
+  if (currency === "XLM") return 0.00001; // Base fee in XLM
+  if (currency === "USDC") return 0.00001; // Fee is still paid in XLM, but represented roughly here
   return 0.01;
 }
 
@@ -41,17 +41,17 @@ export function createPayoutRequest(
   teamMemberId: string,
   amount: number,
   currency: Currency,
-  destinationAddress: string
+  destinationAddress: string,
 ): { request?: PayoutRequest; errors?: Record<string, string> } {
   const quota = MOCK_TEAM_MEMBERS[teamMemberId];
   if (!quota) {
-    return { errors: { teamMemberId: 'Invalid team member ID.' } };
+    return { errors: { teamMemberId: "Invalid team member ID." } };
   }
 
   const errors: Record<string, string> = {};
 
   if (!validateStellarAddress(destinationAddress)) {
-    errors.destinationAddress = 'Invalid Stellar destination address.';
+    errors.destinationAddress = "Invalid Stellar destination address.";
   }
 
   const amountValidation = validatePayoutAmount(amount, currency, quota);
@@ -69,7 +69,7 @@ export function createPayoutRequest(
     amount,
     currency,
     destinationAddress,
-    status: 'PENDING',
+    status: "PENDING",
     createdAt: new Date().toISOString(),
     networkFeeEstimate: estimateNetworkFee(currency),
   };
@@ -77,9 +77,7 @@ export function createPayoutRequest(
   return { request };
 }
 
-export async function simulatePayoutExecution(
-  request: PayoutRequest
-): Promise<PayoutRequest> {
+export async function simulatePayoutExecution(request: PayoutRequest): Promise<PayoutRequest> {
   // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 500));
 
@@ -87,6 +85,6 @@ export async function simulatePayoutExecution(
   // Here we just return success deterministically for testing
   return {
     ...request,
-    status: 'COMPLETED',
+    status: "COMPLETED",
   };
 }
