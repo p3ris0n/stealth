@@ -8,12 +8,7 @@ export function ConfidentialModeSuggestionLoadingState({
   rowCount = 3,
 }: ConfidentialModeSuggestionLoadingStateProps) {
   return (
-    <section
-      role="status"
-      aria-live="polite"
-      aria-busy="true"
-      className="space-y-4"
-    >
+    <section role="status" aria-live="polite" aria-busy="true" className="space-y-4">
       <span className="sr-only">{message}</span>
 
       {Array.from({ length: rowCount }).map((_, index) => (

@@ -25,19 +25,11 @@ export function ConfidentialModeSuggestionEmptyState({
         <Shield className="size-7" />
       </div>
 
-      <h2 className="text-xl font-semibold text-slate-950">
-        {title}
-      </h2>
+      <h2 className="text-xl font-semibold text-slate-950">{title}</h2>
 
-      <p className="mt-3 text-sm leading-6 text-slate-600">
-        {description}
-      </p>
+      <p className="mt-3 text-sm leading-6 text-slate-600">{description}</p>
 
-      {action ? (
-        <div className="mt-6">
-          {action}
-        </div>
-      ) : null}
+      {action ? <div className="mt-6">{action}</div> : null}
     </section>
   );
 }

@@ -1,8 +1,5 @@
 import { AlertTriangle, Info, ShieldCheck } from "lucide-react";
-import type {
-  ConfidentialSuggestion,
-  ConfidentialSuggestionSeverity,
-} from "../types";
+import type { ConfidentialSuggestion, ConfidentialSuggestionSeverity } from "../types";
 
 interface ConfidentialModeRecommendationCardProps {
   suggestion: ConfidentialSuggestion;
@@ -47,20 +44,14 @@ export function ConfidentialModeRecommendationCard({
 
         <div className="flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-semibold text-slate-900">
-              {suggestion.title}
-            </h3>
+            <h3 className="font-semibold text-slate-900">{suggestion.title}</h3>
 
-            <span
-              className={`rounded border px-2 py-1 text-xs font-medium ${config.badge}`}
-            >
+            <span className={`rounded border px-2 py-1 text-xs font-medium ${config.badge}`}>
               {suggestion.severity}
             </span>
           </div>
 
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            {suggestion.description}
-          </p>
+          <p className="mt-2 text-sm leading-6 text-slate-600">{suggestion.description}</p>
 
           <p className="mt-2 text-xs uppercase tracking-wide text-slate-500">
             {suggestion.category}

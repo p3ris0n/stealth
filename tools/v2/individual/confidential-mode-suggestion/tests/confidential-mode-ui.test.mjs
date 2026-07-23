@@ -10,10 +10,7 @@ test("confidential mode analyzer returns the default result shape", () => {
   });
 
   assert.equal(result.score, 100);
-  assert.equal(
-    result.summary,
-    "No confidential mode recommendations available."
-  );
+  assert.equal(result.summary, "No confidential mode recommendations available.");
 
   assert.ok(Array.isArray(result.suggestions));
   assert.equal(result.suggestions.length, 0);

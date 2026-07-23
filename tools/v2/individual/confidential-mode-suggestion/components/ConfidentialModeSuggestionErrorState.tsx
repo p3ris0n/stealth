@@ -8,8 +8,7 @@ interface ConfidentialModeSuggestionErrorStateProps {
 
 export function ConfidentialModeSuggestionErrorState({
   title = "Analysis failed",
-  details =
-    "The confidential mode analysis could not be completed. Please try again.",
+  details = "The confidential mode analysis could not be completed. Please try again.",
   onRetry,
 }: ConfidentialModeSuggestionErrorStateProps) {
   return (
@@ -25,13 +24,9 @@ export function ConfidentialModeSuggestionErrorState({
         <AlertTriangle className="size-7" />
       </div>
 
-      <h2 className="text-xl font-semibold text-red-900">
-        {title}
-      </h2>
+      <h2 className="text-xl font-semibold text-red-900">{title}</h2>
 
-      <p className="mt-3 text-sm leading-6 text-slate-700">
-        {details}
-      </p>
+      <p className="mt-3 text-sm leading-6 text-slate-700">{details}</p>
 
       {onRetry ? (
         <button
