@@ -16,7 +16,7 @@
 import { verifyCommitment } from "./commitment";
 import { recordCryptoTelemetry, type CryptoResultCode } from "./telemetry";
 import { canonicalizeAttachmentDescriptors } from "./attachment-metadata";
-import { sealedEnvelopeSchema } from "./schema";
+import { validateNegotiationForOpen, getSuite, getDefaultVersion } from "./suites";
 
 /** Minimal non-secret error carrying a stable code (no key/plaintext leakage). */
 export class OpenEnvelopeError extends Error {
@@ -45,7 +45,7 @@ export interface KeyProvider {
 }
 
 const GCM_TAG_BYTES = 16;
-const SUPPORTED_VERSION = "v1";
+const SUPPORTED_VERSION = getDefaultVersion();
 
 export interface OpenedEnvelope {
   sender: string;
@@ -149,6 +149,7 @@ export async function openEnvelope(
 ): Promise<OpenedEnvelope> {
   const startTime = performance.now();
   let result: CryptoResultCode = "success";
+  let algorithm = "";
 
   try {
     if (!input || typeof input !== "object") {
@@ -167,28 +168,39 @@ export async function openEnvelope(
         }
       }
     }
-
-    // Perform strict Zod runtime schema validation
-    let validated;
-    try {
-      validated = sealedEnvelopeSchema.parse(input);
-    } catch (err) {
-      throw new OpenEnvelopeError(
-        err instanceof Error ? err.message : "Envelope validation failed",
-        "crypto_validation_error",
-      );
-    }
-
-    const payload = validated.payload;
-    const ciphertextB64 = validated.ciphertext;
-
-    const sender = payload.sender;
-    const recipient = payload.recipient;
-    const timestamp = payload.timestamp;
+    const sender = str(payload.sender, "sender");
+    const recipient = str(payload.recipient, "recipient");
+    const timestamp = str(payload.timestamp, "timestamp");
     const meta = payload.encryption_metadata;
-    const nonceHex = meta.nonce;
-    const macHex = meta.mac;
-    const commitment = payload.content_commitment;
+    if (!meta || typeof meta !== "object") {
+      throw new OpenEnvelopeError("encryption_metadata is missing", "crypto_validation_error");
+    }
+    algorithm = str(meta.algorithm, "algorithm");
+
+    // Validate version + suite combination against the fail-closed registry.
+    try {
+      validateNegotiationForOpen(payload.version as string, algorithm);
+    } catch (err) {
+      if (err instanceof Error && "code" in err) {
+        const code = (err as { code: string }).code;
+        if (code === "crypto_version_error") {
+          throw new OpenEnvelopeError(
+            `unsupported envelope version: ${String(payload.version)}`,
+            "crypto_version_error",
+          );
+        }
+        if (code === "crypto_algorithm_error") {
+          throw new OpenEnvelopeError(
+            `unsupported algorithm: ${algorithm}`,
+            "crypto_validation_error",
+          );
+        }
+      }
+      throw new OpenEnvelopeError("validation failed", "crypto_validation_error");
+    }
+    const nonceHex = str(meta.nonce, "nonce");
+    const macHex = str(meta.mac, "mac");
+    const commitment = str(payload.content_commitment, "content_commitment");
 
     // 1) Decode ciphertext.
     let ciphertext: Uint8Array<ArrayBuffer>;
@@ -282,9 +294,10 @@ export async function openEnvelope(
     throw error;
   } finally {
     const durationMs = Math.max(1, Math.round(performance.now() - startTime));
+    const suiteName = getSuite(algorithm)?.name ?? algorithm;
     recordCryptoTelemetry({
       operation: "open",
-      suite: "AES-256-GCM",
+      suite: suiteName,
       result,
       durationMs,
     });
