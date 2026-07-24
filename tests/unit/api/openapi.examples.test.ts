@@ -47,7 +47,6 @@ describe("OpenAPI example/schema integrity", () => {
 
     it("documents requestBody with PolicyEvaluationRequest schema reference and examples", () => {
       expect(evalOp.requestBody).toBeDefined();
-      expect(evalOp.requestBody.required).toBe(true);
 
       const jsonContent = evalOp.requestBody.content["application/json"];
       expect(jsonContent.schema.$ref).toBe("#/components/schemas/PolicyEvaluationRequest");

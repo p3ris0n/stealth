@@ -164,7 +164,6 @@ export const openApiDocument = {
       },
       PolicyEvaluationRequest: {
         type: "object",
-        required: ["owner", "postage", "sender", "verified"],
         additionalProperties: false,
         properties: {
           owner: {
@@ -707,7 +706,6 @@ export const openApiDocument = {
         summary: "Evaluate whether a sender can mail a recipient",
         "x-stability": "stable",
         requestBody: {
-          required: true,
           description: "Mail admission policy evaluation input parameters.",
           content: {
             "application/json": {
