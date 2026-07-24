@@ -306,29 +306,20 @@ describe("POST /api/v1/policies/evaluate vector suite", () => {
         { owner, postage: "100", sender: "INVALID_SENDER", verified: true },
         422,
       ],
-      [
-        "negative postage string",
-        { owner, postage: "-100", sender, verified: true },
-        422,
-      ],
-      [
-        "non-integer postage string",
-        { owner, postage: "123.45", sender, verified: true },
-        422,
-      ],
-      [
-        "missing verified boolean field",
-        { owner, postage: "100", sender },
-        422,
-      ],
-    ])("rejects malformed payload '%s' with HTTP %i", async (_label, invalidBody, expectedStatus) => {
-      const request = createEvaluateRequest(invalidBody);
-      const response = await evaluateHandler({ request });
+      ["negative postage string", { owner, postage: "-100", sender, verified: true }, 422],
+      ["non-integer postage string", { owner, postage: "123.45", sender, verified: true }, 422],
+      ["missing verified boolean field", { owner, postage: "100", sender }, 422],
+    ])(
+      "rejects malformed payload '%s' with HTTP %i",
+      async (_label, invalidBody, expectedStatus) => {
+        const request = createEvaluateRequest(invalidBody);
+        const response = await evaluateHandler({ request });
 
-      expect(response.status).toBe(expectedStatus);
-      const body = await response.json();
-      expect(body.error?.code).toBe("validation_error");
-    });
+        expect(response.status).toBe(expectedStatus);
+        const body = await response.json();
+        expect(body.error?.code).toBe("validation_error");
+      },
+    );
   });
 
   describe("request correlation & tracing propagation", () => {

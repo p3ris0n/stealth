@@ -50,21 +50,36 @@ export const policyServiceVectors: PolicyServiceVector[] = [
     policy: { ...basePolicy, allowUnknown: false },
     senderRule: null,
     input: { postage: "0", sender, verified: false },
-    expected: { allowed: false, reason: "unknown_senders_disabled", source: "configured", rule: "default" },
+    expected: {
+      allowed: false,
+      reason: "unknown_senders_disabled",
+      source: "configured",
+      rule: "default",
+    },
   },
   {
     name: "verification required when unverified",
     policy: { ...basePolicy, allowUnknown: true, requireVerified: true },
     senderRule: null,
     input: { postage: "1000", sender, verified: false },
-    expected: { allowed: false, reason: "verification_required", source: "configured", rule: "default" },
+    expected: {
+      allowed: false,
+      reason: "verification_required",
+      source: "configured",
+      rule: "default",
+    },
   },
   {
     name: "insufficient postage below minimum required postage",
     policy: { ...basePolicy, allowUnknown: true, requireVerified: false, minimumPostage: "500" },
     senderRule: null,
     input: { postage: "100", sender, verified: true },
-    expected: { allowed: false, reason: "insufficient_postage", source: "configured", rule: "default" },
+    expected: {
+      allowed: false,
+      reason: "insufficient_postage",
+      source: "configured",
+      rule: "default",
+    },
   },
   {
     name: "policy satisfied (allow, verified, enough postage)",
@@ -78,7 +93,12 @@ export const policyServiceVectors: PolicyServiceVector[] = [
     policy: null,
     senderRule: null,
     input: { postage: "0", sender, verified: false },
-    expected: { allowed: false, reason: "unknown_senders_disabled", source: "default", rule: "default" },
+    expected: {
+      allowed: false,
+      reason: "unknown_senders_disabled",
+      source: "default",
+      rule: "default",
+    },
   },
   {
     name: "missing policy (no stored policy) allows verified sender with default postage",
@@ -96,7 +116,12 @@ export const policyServiceVectors: PolicyServiceVector[] = [
   },
   {
     name: "extreme postage value (soroban i128 max) satisfies policy",
-    policy: { ...basePolicy, allowUnknown: true, requireVerified: false, minimumPostage: "1000000" },
+    policy: {
+      ...basePolicy,
+      allowUnknown: true,
+      requireVerified: false,
+      minimumPostage: "1000000",
+    },
     senderRule: null,
     input: { postage: "170141183460469231731687303715884105727", sender, verified: true },
     expected: { allowed: true, reason: "policy_satisfied", source: "configured", rule: "default" },
